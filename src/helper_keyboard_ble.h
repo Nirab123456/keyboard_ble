@@ -14,5 +14,30 @@ class BatteryMonitorClass{
         float    calibration_factor;
         
         uint8_t  charge_status_pin;
+        BatteryMonitorClass();
+        bool begin();
+        void saveSETTINGS();
+        bool getBatterySTATUS();
+        void calibrateUsingMEASURED_Volt(float measured_Volt);
+        void setDEVIDER(float top, float bottom);
+        void setNumberOfSAMPLES(uint8_t n);
+        void setINTERVAL(float a);
+        void setAdcREF(float v);
+        void printCONFIG();
 
+    private:
+
+        float _ema_voltage;
+        int   _last_percentage;
+
+        Preferences _prefs;
+        SemaphoreHandle_t _mutex;
+        TaskHandle_t  _task_handle;
+
+        static void _taskFunctionSTATIC(void* p);
+        void _taskFUNC();
+        float _adcRawToBatteryVOLTAGE(float adcAVG);
+        float _sampleMedianRAW();
+        int _voltageToPERCENTAGE(float v);
+        static const uint8_t VOLTS_TABLE_SIZE =11;
 };
