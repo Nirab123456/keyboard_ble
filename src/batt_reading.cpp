@@ -31,7 +31,108 @@ BatteryMonitorClass::BatteryMonitorClass()
         _mutex(NULL),
         _task_handle(NULL)
 {
-
 }
 
+bool BatteryMonitorClass::begin()
+{
+    _mutex = xSemaphoreCreateMutex();
+    if(!_mutex)
+    {
+        Serial.println("BATTERY::MUTEX::Creation failed");
+        return false;
+    }
+    _prefs.begin(PREF_NAMESPACE,false);
+    pin_adc = _prefs.getInt("pin_adc",pin_adc);
+    r_top = _prefs.getFloat("r_top",r_top);
+    r_bottom =  _prefs.getFloat("r_bottom",r_bottom);
+    number_of_samples = _prefs.getInt("num_samp",number_of_samples);
+    sample_delay_ms = _prefs.getInt("s_delayMS",sample_delay_ms);
+    interval_ms = _prefs.getInt("interval_MS",interval_ms);
+    ema_alpha = _prefs.getFloat("ema_alpha",ema_alpha);
+    adc_ref = _prefs.getFloat("adc_ref",adc_ref);
+    calibration_factor = _prefs.getFloat("calibration_factor",calibration_factor);
+    charge_status_pin = _prefs.getInt("charge_status_pin",charge_status_pin);
 
+    analogReadResolution(12);
+    #if defined(ARDUINO_ARCH_ESP32)
+    analogSetPinAttenuation(pin_adc,ADC_11db);
+    #endif
+
+
+    if(charge_status_pin>=0)
+    {
+        pinMode(charge_status_pin,INPUT_PULLUP);
+    }
+
+    BaseType_t r = xTaskCreatePinnedToCore(
+        _taskFunctionSTATIC,"BATTERY-MONITOR-TASK",4096,this,2,&_task_handle,1
+    );
+    if (r!=pdPASS)
+    {
+        Serial.println("BATTERY::BATTERY-MONITOR-TASK::Creation failed");
+        return false;
+    }
+    Serial.println("BATTERY-MONITOR-TASK::Created");
+    return true;
+}
+
+void BatteryMonitorClass::saveSETTINGS()
+{
+    _prefs.putInt("pin_adc",pin_adc);
+    _prefs.putFloat("r_top",r_top);
+    _prefs.putFloat("r_bottom",r_bottom);
+    _prefs.putInt("num_samp",number_of_samples);
+    _prefs.putInt("s_delayMS",sample_delay_ms);
+    _prefs.putInt("interval_MS",interval_ms);
+    _prefs.putFloat("ema_alpha",ema_alpha);
+    _prefs.putFloat("adc_ref",adc_ref);
+    _prefs.putFloat("calibration_factor",calibration_factor);
+    _prefs.putInt("charge_status_pin",charge_status_pin);
+    Serial.println("BATTERY:Prefarance settings saved.");
+}
+
+bool BatteryMonitorClass::getBatterySTATUS(float* outVoltage,int* outPercent,bool* outCharging = nullptr)
+{
+    if (!_mutex)
+    {
+        return false;
+    }
+    if (xSemaphoreTake(_mutex,pdMS_TO_TICKS(50)) != pdTRUE)
+    {
+        return false;
+    }
+    if (outVoltage)
+    {
+        *outVoltage = _ema_voltage;
+    }
+    if (outPercent)
+    {
+        *outPercent = _last_percentage;
+    }
+    if (outCharging && charge_status_pin >= 0)
+    {
+        *outCharging = (digitalRead(charge_status_pin)==LOW);
+    }
+    xSemaphoreGive(_mutex);
+    return true;
+}
+
+void BatteryMonitorClass::calibrateUsingMEASURED_Volt(float measuredVoltage)
+{
+    float raw_adc = _sampleMedianRAW();
+    float measuredReport = _adcRawToBatteryVOLTAGE(raw_adc);
+    if (measuredReport <= 0.0f)
+    {
+        Serial.println("BATTERY MONITOR::Calibration read error");
+        return;
+    }
+    float  newFactor = measuredVoltage/measuredReport;
+    if (newFactor<=0.0f || !isfinite(newFactor))
+    {
+        Serial.println("BATTERY MONITOR :: CALIBRATION:: Faild(invalid factor)");
+        return;
+    }
+    calibration_factor = newFactor;
+    _prefs.putFloat("calibration_factor",calibration_factor);
+    Serial.println(calibration_factor,6);
+}
