@@ -34,7 +34,7 @@ public:
     void setINTERVAL(uint16_t a);
     void setAdcREF(float v);
     void printCONFIG();
-
+    void setemaALPHA(float alpha);
 private:
     // internal state
     float _ema_voltage;

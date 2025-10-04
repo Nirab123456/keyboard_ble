@@ -136,3 +136,57 @@ void BatteryMonitorClass::calibrateUsingMEASURED_Volt(float measuredVoltage)
     _prefs.putFloat("calibration_factor",calibration_factor);
     Serial.println(calibration_factor,6);
 }
+void BatteryMonitorClass::setDEVIDER(float top , float bottom)
+{
+    r_top = top;
+    r_bottom = bottom;
+    _prefs.putFloat("r_top",r_top);
+    _prefs.putFloat("r_bottom",r_bottom);
+}
+void BatteryMonitorClass::setNumberOfSAMPLES(uint8_t n)
+{
+    if (n<3)
+    {
+        n = 3;
+    }
+    number_of_samples = n;
+    _prefs.putInt("num_samp",number_of_samples);
+    
+}
+void BatteryMonitorClass::setINTERVAL(uint16_t ms)
+{
+    if (ms < 100)
+    {
+        ms = 100;
+    }
+    interval_ms = ms;
+    _prefs.putInt("interval_MS",interval_ms);
+}
+void BatteryMonitorClass::setemaALPHA(float alpha)
+{
+    if (alpha <0.01f)
+    {
+        alpha = 0.01f;
+    }
+    ema_alpha = alpha;
+    _prefs.putFloat("ema_alpha",ema_alpha);
+}
+void BatteryMonitorClass::setAdcREF(float v)
+{
+    adc_ref = v;
+    _prefs.putFloat("adc_ref",adc_ref);
+}
+void BatteryMonitorClass::printCONFIG()
+{
+    Serial.println("----Battery Monitor Configuration----");
+    Serial.printf("ADC pin : %d\n",pin_adc);
+    Serial.printf("Divider : top =%0.0f ohm,\tbottom = %0.0f ohm\n",r_top,r_bottom);
+    Serial.printf("Number of Samples : %d & Delay %d ms\n",number_of_samples,sample_delay_ms);
+    Serial.printf("Interval %d ms\n",interval_ms);
+    Serial.printf("EMA ALPHA : %0.3f\n",ema_alpha);
+    Serial.printf("ADC Refarance : %0.4f\n",adc_ref);
+    Serial.printf("Calibration Factor %0.6f\n",calibration_factor);
+    Serial.printf("Charge Status pin : %u\n",charge_status_pin);
+    Serial.println("------------------DONE-----------------");
+
+}
