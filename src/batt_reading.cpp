@@ -240,6 +240,66 @@ void BatteryMonitorClass::_taskFUNC()
         }
         Serial.println();
         vTaskDelay(pdMS_TO_TICKS(interval_ms));
+    }   
+}
+
+float BatteryMonitorClass:: _sampleMedianRAW()
+{
+    uint8_t n = number_of_samples;
+    if (n<3)
+    {
+        n = 3;
     }
-    
+    std::vector<int>v;
+    v.reserve(n);
+    for (size_t i = 0; i < n; i++)
+    {
+        int a = analogRead(pin_adc);
+        v.push_back(a);
+        vTaskDelay(pdMS_TO_TICKS(sample_delay_ms));
+    }
+
+    std::sort(v.begin(),v.end());
+    uint8_t mid = n/2;
+    uint8_t start = max(0,mid-1);
+    uint8_t end = min(n-1,mid+1);
+    long sum = 0;
+    for(int i = start;i<=end;i++)
+    {
+        sum+= v[i];
+    }
+    float avg = (float)sum/(float)(end-start+1);
+    return avg;    
+}
+
+uint8_t BatteryMonitorClass:: _voltageToPERCENTAGE(float v)
+{
+    const float table[VOLTS_TABLE_SIZE] ={
+        4.2,4.05,3.92,3.86,3.80,3.75,3.70,3.65,3.60,3.55,3.30
+    };
+    const int ptab[VOLTS_TABLE_SIZE] = {
+        100,90,80,70,60,50,40,30,20,10,0
+    };
+    if (v>=table[0])
+    {
+        return 100;
+    }
+    if (v<=table[VOLTS_TABLE_SIZE-1])
+    {
+        return 0;
+    }
+    for (uint8_t i = 0; i < VOLTS_TABLE_SIZE; i++)
+    {
+        if (v<=table[i]&& v>= table[i+1])
+        {
+            float v1 = table[i];
+            float v2 = table[i+1];
+            uint8_t p1 = ptab[i];
+            uint8_t p2 = ptab[i+1];
+            float frac = (v-v2)/(v1-v2);
+            uint8_t pct = round(p2+frac*(p1-p2));
+            return pct;
+        }
+    }
+    return 0;
 }

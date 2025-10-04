@@ -49,7 +49,7 @@ private:
     void _taskFUNC();
     float _adcRawToBatteryVOLTAGE(float adcAVG);
     float _sampleMedianRAW();
-    int _voltageToPERCENTAGE(float v);
+    uint8_t _voltageToPERCENTAGE(float v);
 
     // compile-time size for the table (unchanged name)
     static const uint8_t VOLTS_TABLE_SIZE = 11;
