@@ -190,3 +190,56 @@ void BatteryMonitorClass::printCONFIG()
     Serial.println("------------------DONE-----------------");
 
 }
+
+void BatteryMonitorClass::_taskFunctionSTATIC(void* p)
+{
+    static_cast<BatteryMonitorClass*>(p)->_taskFUNC();
+}
+float BatteryMonitorClass::_adcRawToBatteryVOLTAGE(float adcAvg)
+{
+    float v_adc = ((adcAvg/DEFAULT_ADC_MAX)*adc_ref);
+    float divider = ((r_top+r_bottom)/r_bottom);
+    float vbat = v_adc*calibration_factor;
+    return vbat;
+}
+void BatteryMonitorClass::_taskFUNC()
+{
+    vTaskDelay(pdMS_TO_TICKS(200));
+
+    {
+        float raw = _sampleMedianRAW();
+        float v = _adcRawToBatteryVOLTAGE(raw);
+        _ema_voltage = v;
+        _last_percentage = _voltageToPERCENTAGE(v);
+    }
+    for (;;)
+    {
+        float raw = _sampleMedianRAW();
+        float v = _adcRawToBatteryVOLTAGE(raw);
+        int pct = _voltageToPERCENTAGE(v);
+
+        _ema_voltage = (ema_alpha*v)+((1.0f-ema_alpha)*_ema_voltage);
+        if(_mutex)
+        {
+            if (xSemaphoreTake(_mutex,pdMS_TO_TICKS(50))==pdTRUE)
+            {
+                _last_percentage = pct;
+                xSemaphoreGive(_mutex);
+            }
+            
+        }
+        Serial.print("BATTERY MONITOR :: Raw Voltage = ");
+        Serial.print(v,3);
+        Serial.print(" EMA = ");
+        Serial.print(_ema_voltage,3);// why 3??
+        Serial.print("Voltage pct = ");
+        Serial.print(pct);
+        if (charge_status_pin >= 0)
+        {
+            Serial.print(digitalRead(charge_status_pin)==LOW ? "YES":"NO");
+        }
+        Serial.println();
+        vTaskDelay(pdMS_TO_TICKS(interval_ms));
+    }
+    
+}
