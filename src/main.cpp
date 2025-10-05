@@ -1,20 +1,20 @@
-#include <Arduino.h>
+#include "helper_keyboard_ble.h"
+#define COMMAND_BATTERY_MONITOR_START   "bmon-start"
+#define COMMAND_SERIAL_LOOP_CALIBRATION "_l_bserial-cal"
+BatteryMonitorClass batmon;
+static String _line;
 
-uint16_t INTEGER ;
 
 void setup()
 {
-    int i = 2;
-    int j = 3;
-
-    int k = i+j;
-    INTEGER = k;
+    Serial.begin(115200);
+    delay(300);
+    batmon.executeBATTERYMONITOR(COMMAND_BATTERY_MONITOR_START,_line);//_line not used nor available
 
 }
 
 void loop()
 {
-    Serial.begin(115200);
-    INTEGER++;
-    Serial.printf("INTEGER IS %i",INTEGER);
+    batmon.executeBATTERYMONITOR(COMMAND_BATTERY_MONITOR_START,_line);
+
 }

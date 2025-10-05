@@ -37,6 +37,7 @@ public:
     void setemaALPHA(float alpha);
     void processSerialLINE(String &s);
     void printHELP();
+    void executeBATTERYMONITOR(char* cmnd,String &s);
 private:
     // internal state
     float _ema_voltage;

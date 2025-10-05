@@ -200,7 +200,7 @@ float BatteryMonitorClass::_adcRawToBatteryVOLTAGE(float adcAvg)
 {
     float v_adc = ((adcAvg/DEFAULT_ADC_MAX)*adc_ref);
     float divider = ((r_top+r_bottom)/r_bottom);
-    float vbat = v_adc*calibration_factor;
+    float vbat = v_adc*calibration_factor*divider;
     return vbat;
 }
 void BatteryMonitorClass::_taskFUNC()
@@ -289,7 +289,7 @@ uint8_t BatteryMonitorClass:: _voltageToPERCENTAGE(float v)
     {
         return 0;
     }
-    for (uint8_t i = 0; i < VOLTS_TABLE_SIZE; i++)
+    for (uint8_t i = 0; i < VOLTS_TABLE_SIZE-1; i++)
     {
         if (v<=table[i]&& v>= table[i+1])
         {
@@ -337,10 +337,12 @@ void BatteryMonitorClass:: processSerialLINE(String &is)
     while (idx<is.length())
     {
         int sp = is.indexOf(' ',idx);
-        if (sp==-1)
-        {
-            tokens.push_back(is.substring(idx,sp));
-            idx=sp+1;
+        if (sp == -1) {
+            tokens.push_back(is.substring(idx)); // rest of string
+            break;
+        } else {
+            tokens.push_back(is.substring(idx, sp));
+            idx = sp + 1;
         }
     }
     if (tokens.size()==0)
@@ -436,4 +438,42 @@ void BatteryMonitorClass:: printHELP()
     Serial.println(F("SET CHARGEINDICATOR <pin>    - set optional TP4056 STAT pin (use -1 to disable)"));
     Serial.println(F("SAVE                 - persist settings to flash"));
         
+}
+
+void BatteryMonitorClass:: executeBATTERYMONITOR(char* cmnd,String &_line)
+{
+    if (cmnd == "bmon-start")
+    {
+    begin();
+    printHELP();
+    }
+    else if (cmnd == "_l_bserial-cal")
+    {
+        while (Serial.available())
+        {
+            char c = Serial.read();
+            if (c=='\r')
+            {
+                continue;
+            }
+            if (c=='\n')
+            {
+                processSerialLINE(_line);
+                _line = "";
+            }
+            else
+            {
+                _line +=c;
+                if (_line.length() > 128)
+                {
+                    _line = _line.substring(0,128);
+                }
+            }
+        }
+        vTaskDelay(pdMS_TO_TICKS(50));
+    }
+    else
+    {
+        Serial.println("BATTERY MONITOR : error start or calibration command");
+    }
 }
