@@ -9,12 +9,21 @@ void setup()
 {
     Serial.begin(115200);
     delay(300);
-    batmon.executeBATTERYMONITOR(COMMAND_BATTERY_MONITOR_START,_line);//_line not used nor available
-
+    batmon.begin();
+    batmon.printHELP();
 }
 
 void loop()
 {
-    batmon.executeBATTERYMONITOR(COMMAND_BATTERY_MONITOR_START,_line);
-
+  while (Serial.available()) {
+    char c = Serial.read();
+    if (c == '\r') continue;
+    if (c == '\n') {
+      batmon.processSerialLINE(_line);
+      _line = "";
+    } else {
+      _line += c;
+      if (_line.length() > 128) _line = _line.substring(0, 128);
+    }
+  }
 }

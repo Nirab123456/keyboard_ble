@@ -1,5 +1,4 @@
-#include <Arduino.h>
-#include <Preferences.h>
+// batt_reading.cpp
 #include <helper_keyboard_ble.h>
 
 #define DEFAULT_ADC_PIN         4
@@ -91,7 +90,8 @@ void BatteryMonitorClass::saveSETTINGS()
     Serial.println("BATTERY:Prefarance settings saved.");
 }
 
-bool BatteryMonitorClass::getBatterySTATUS(float* outVoltage,int* outPercent,bool* outCharging = nullptr)
+// <- default removed here; header should keep the default if you want one
+bool BatteryMonitorClass::getBatterySTATUS(float* outVoltage,int* outPercent,bool* outCharging)
 {
     if (!_mutex)
     {
@@ -440,40 +440,3 @@ void BatteryMonitorClass:: printHELP()
         
 }
 
-void BatteryMonitorClass:: executeBATTERYMONITOR(char* cmnd,String &_line)
-{
-    if (cmnd == "bmon-start")
-    {
-    begin();
-    printHELP();
-    }
-    else if (cmnd == "_l_bserial-cal")
-    {
-        while (Serial.available())
-        {
-            char c = Serial.read();
-            if (c=='\r')
-            {
-                continue;
-            }
-            if (c=='\n')
-            {
-                processSerialLINE(_line);
-                _line = "";
-            }
-            else
-            {
-                _line +=c;
-                if (_line.length() > 128)
-                {
-                    _line = _line.substring(0,128);
-                }
-            }
-        }
-        vTaskDelay(pdMS_TO_TICKS(50));
-    }
-    else
-    {
-        Serial.println("BATTERY MONITOR : error start or calibration command");
-    }
-}

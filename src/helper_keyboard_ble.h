@@ -4,6 +4,9 @@
 #include <vector>               // used by implementation for median/sort
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
+#include <vector>
+#include <algorithm>
+#include <cmath>
 
 class BatteryMonitorClass {
 public:
@@ -37,7 +40,6 @@ public:
     void setemaALPHA(float alpha);
     void processSerialLINE(String &s);
     void printHELP();
-    void executeBATTERYMONITOR(char* cmnd,String &s);
 private:
     // internal state
     float _ema_voltage;
