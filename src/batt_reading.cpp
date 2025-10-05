@@ -101,6 +101,7 @@ bool BatteryMonitorClass::getBatterySTATUS(float* outVoltage,int* outPercent,boo
     {
         return false;
     }
+        /* code */
     if (outVoltage)
     {
         *outVoltage = _ema_voltage;
@@ -302,4 +303,137 @@ uint8_t BatteryMonitorClass:: _voltageToPERCENTAGE(float v)
         }
     }
     return 0;
+}
+
+void BatteryMonitorClass:: processSerialLINE(String &is)
+{
+    is.trim();
+    is.toUpperCase();
+    if (is.length()==0)
+    {
+        return;
+    }
+    if (is=="HELP")
+    {
+        printHELP();
+        return;   
+    }
+    if (is == "GET")
+    {
+        float raw_V;
+        int bat_percent;
+        bool charge_indecitor;
+        getBatterySTATUS(&raw_V,&bat_percent,&charge_indecitor);
+        Serial.printf("BATTERY MONITOR :: Voltage :%0.3f\t BATTERY PERCENTAGE :%i\nCharging : %s",raw_V,bat_percent,charge_indecitor? "YES":"NO");
+    }
+    if (is=="CFG")
+    {
+        printCONFIG();
+        return;
+    }
+    
+    std::vector<String> tokens;
+    int idx = 0;
+    while (idx<is.length())
+    {
+        int sp = is.indexOf(' ',idx);
+        if (sp==-1)
+        {
+            tokens.push_back(is.substring(idx,sp));
+            idx=sp+1;
+        }
+    }
+    if (tokens.size()==0)
+    {return;
+    }
+    if (tokens[0]=="CAL"&&tokens.size()>=2)
+    {
+        float m =tokens[1].toFloat();
+        if (m>0)
+        {
+            calibrateUsingMEASURED_Volt(m);
+        }
+        else
+        {
+            Serial.println("BATTERY:CALIBRATION::Argument Invalid");
+        }
+        return;
+    }
+
+    if (tokens[0]=="SET")
+    {
+        String field = tokens[1];
+        String val = tokens[2];
+        if (field=="PIN")
+        {
+            pin_adc = val.toInt();
+        }
+        else if (field =="RTOP")
+        {
+            setDEVIDER(val.toFloat(),r_bottom);
+        }
+        else if (field == "RBOTTOM")
+        {
+            setDEVIDER(r_top,val.toFloat());
+        }
+        else if (field == "NUMSAMP")
+        {
+            setNumberOfSAMPLES(val.toInt());
+        }
+        else if (field == "DELAY")
+        {
+            sample_delay_ms = val.toInt();
+        }
+        else if (field=="INTERVAL")
+        {
+            setINTERVAL(val.toInt());
+            return;
+        }
+        else if (field == "ALPHA")
+        {
+            setemaALPHA(val.toFloat());
+        }
+        else if (field=="ADCREF")
+        {
+            setAdcREF(val.toFloat());
+        }
+        else if (field=="CHARGEINDICATOR")
+        {
+            charge_status_pin = val.toInt();
+        }
+        else
+        {
+            Serial.println("UNKNOWN SET FIELD");
+        }
+        return;
+    }
+    else if (tokens[0]=="SAVE")
+    {
+        saveSETTINGS();
+        return;
+    }
+    else
+    {
+        Serial.println("UNKNOWN -- COMMAND use:HELP");
+    }
+}
+
+void BatteryMonitorClass:: printHELP()
+{
+    Serial.println(F("BATMON COMMAND: "));
+    Serial.println(F("HELP  --------    Show all commands"));
+    Serial.println(F("CFG   --------    Print current configuration"));
+    Serial.println(F("GET   --------    Print current battery state"));
+    Serial.println(F("CAL<voltage>     -Calibrate using measured battery voltage"));
+    Serial.println(F("SET PIN <n>      -set ADC pin"));
+    Serial.println(F("SET RTOP <ohm>       - set top resistor"));
+    Serial.println(F("SET RBOT <ohm>       - set bottom resistor"));
+    Serial.println(F("SET SAMP <n>         - set sample window count"));
+    Serial.println(F("SET DELAY <ms>       - set ms between raw samples"));
+    Serial.println(F("SET INTERVAL <ms>         - set monitor interval"));
+    Serial.println(F("SET ALPHA <0..1>     - set EMA alpha"));
+    Serial.println(F("SET ADCREF <v>       - set ADC ref voltage (nominal)"));
+    Serial.println(F("SET CHARGEINDICATOR <pin>    - set optional TP4056 STAT pin (use -1 to disable)"));
+    Serial.println(F("SAVE                 - persist settings to flash"));
+        
 }

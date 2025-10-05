@@ -35,6 +35,8 @@ public:
     void setAdcREF(float v);
     void printCONFIG();
     void setemaALPHA(float alpha);
+    void processSerialLINE(String &s);
+    void printHELP();
 private:
     // internal state
     float _ema_voltage;
