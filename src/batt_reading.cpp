@@ -23,7 +23,7 @@ BatteryMonitorClass::BatteryMonitorClass()
         ema_alpha(DEFAULT_EMA_ALPHA),
         adc_ref(DEFAULT_ADC_REF),
         calibration_factor(1.0f),
-        charge_status_pin(-1),
+        charge_status_pin(5),
         _ema_voltage(0.0f),
         _last_percentage(0),
         _prefs(),
@@ -324,7 +324,7 @@ void BatteryMonitorClass:: processSerialLINE(String &is)
         int bat_percent;
         bool charge_indecitor;
         getBatterySTATUS(&raw_V,&bat_percent,&charge_indecitor);
-        Serial.printf("BATTERY MONITOR :: Voltage :%0.3f\t BATTERY PERCENTAGE :%i\nCharging : %s",raw_V,bat_percent,charge_indecitor? "YES":"NO");
+        Serial.printf("BATTERY MONITOR :: Voltage :%0.3f\t BATTERY PERCENTAGE :%i\nCharging : %s",raw_V,bat_percent,charge_indecitor? "\tYES":"\tNO");
     }
     if (is=="CFG")
     {
