@@ -7,7 +7,7 @@
 
 #define OLED_WIDTH 128
 #define OLED_HEIGHT 64
-#define OLED_I2C_ADDR 0x78
+#define OLED_I2C_ADDR 0x3C
 
 const char* OLED_TASK_NAME = "OLED_DEBUGGER";
 const size_t OLED_DEBUGGE = 4096;
