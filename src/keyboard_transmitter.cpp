@@ -207,26 +207,58 @@ static void key_event_callback(bool pressed, uint8_t modifier, uint8_t key_code)
 static void hid_host_keyboard_report_callback(const uint8_t *const data, const int length) {
   if (length < sizeof(hid_keyboard_input_report_boot_t)) return;
   const hid_keyboard_input_report_boot_t *kb = (const hid_keyboard_input_report_boot_t *)data;
-  static uint8_t prev[HID_KEYBOARD_KEY_MAX] = {0};
 
-  for (int i=0;i<HID_KEYBOARD_KEY_MAX;i++) {
+  static uint8_t prev[HID_KEYBOARD_KEY_MAX] = {0};
+  static uint8_t prev_mods = 0;
+
+  // current modifier byte from the keyboard report
+  uint8_t curr_mods = kb->modifier.val;
+
+  // 1) Detect modifier changes (press / release)
+  uint8_t changed = curr_mods ^ prev_mods;
+  if (changed) {
+    // For each bit that changed, enqueue a modifier press (pressed=true) or release (pressed=false)
+    for (uint8_t bit = 1; bit != 0; bit <<= 1) {
+      if (changed & bit) {
+        bool now = (curr_mods & bit) != 0;
+        // usage == 0 means "modifier-only" event; bleTask will apply mods from ev.mods
+        enqueueKey(0, bit, now);
+      }
+    }
+  }
+
+  // 2) Handle key releases (present in prev but not in current)
+  for (int i = 0; i < HID_KEYBOARD_KEY_MAX; ++i) {
     uint8_t pk = prev[i];
     if (pk > HID_KEY_ERROR_UNDEFINED) {
       bool still = false;
-      for (int j=0;j<HID_KEYBOARD_KEY_MAX;j++) if (kb->key[j] == pk) { still=true; break; }
-      if (!still) enqueueKey(pk, 0, false);
+      for (int j = 0; j < HID_KEYBOARD_KEY_MAX; ++j) {
+        if (kb->key[j] == pk) { still = true; break; }
+      }
+      if (!still) {
+        // Use prev_mods here so the release is associated with the modifiers that were active
+        enqueueKey(pk, prev_mods, false);
+      }
     }
   }
 
-  for (int i=0;i<HID_KEYBOARD_KEY_MAX;i++) {
+  // 3) Handle key presses (present in current but not in prev)
+  for (int i = 0; i < HID_KEYBOARD_KEY_MAX; ++i) {
     uint8_t k = kb->key[i];
     if (k > HID_KEY_ERROR_UNDEFINED) {
       bool was = false;
-      for (int j=0;j<HID_KEYBOARD_KEY_MAX;j++) if (prev[j] == k) { was=true; break; }
-      if (!was) enqueueKey(k, kb->modifier.val, true);
+      for (int j = 0; j < HID_KEYBOARD_KEY_MAX; ++j) {
+        if (prev[j] == k) { was = true; break; }
+      }
+      if (!was) {
+        // For key down, include current modifiers
+        enqueueKey(k, curr_mods, true);
+      }
     }
   }
 
+  // 4) Update prevs for next report
+  prev_mods = curr_mods;
   memcpy(prev, kb->key, HID_KEYBOARD_KEY_MAX);
 }
 
