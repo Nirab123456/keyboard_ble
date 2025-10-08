@@ -6,6 +6,7 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
 #include <freertos/task.h>
+#include <OledLogger.h>
 
 #include "usb/usb_host.h"
 #include "hid_host.h"
@@ -130,10 +131,10 @@ void enqueueKey(uint8_t usage, uint8_t mods, bool pressed) {
 // BLE task
 void bleTask(void* pv) {
   (void)pv;
-  oled_LOGF("[BLE] init");
+  OledLogger::logf("[BLE] init");
   setNimBLEPref();
   blekbd.begin();
-  oled_LOGF("[BLE] advertising");
+  OledLogger::logf("[BLE] advertising");
 
   for (;;) {
     KeyEvent ev;
@@ -185,9 +186,9 @@ static void hid_print_new_device_report_header(hid_protocol_t proto) {
   static hid_protocol_t prev_proto = HID_PROTOCOL_MAX;
   if (prev_proto != proto) {
     prev_proto = proto;
-    if (proto == HID_PROTOCOL_MOUSE) oled_LOGF("Mouse");
-    else if (proto == HID_PROTOCOL_KEYBOARD) oled_LOGF("Keyboard");
-    else oled_LOGF("Generic");
+    if (proto == HID_PROTOCOL_MOUSE) OledLogger::logf("Mouse");
+    else if (proto == HID_PROTOCOL_KEYBOARD) OledLogger::logf("Keyboard");
+    else OledLogger::logf("Generic");
   }
 }
 
@@ -197,7 +198,7 @@ static void key_event_callback(bool pressed, uint8_t modifier, uint8_t key_code)
     char ch = usageToAscii(key_code, modifier);
     if (ch) {
       Serial.print(ch);
-      if (ch == '\r') oled_LOGF("\n");
+      if (ch == '\r') OledLogger::logf("\n");
     }
   }
   enqueueKey(key_code, modifier, pressed);
@@ -242,7 +243,7 @@ static void hid_host_generic_report_callback(const uint8_t *const data, const in
   hid_print_new_device_report_header(HID_PROTOCOL_NONE);
   Serial.printf("GENERIC %d:", length);
   for (int i=0;i<min(10,length);++i) Serial.printf("%02X", data[i]);
-  oled_LOGF("\n");
+  OledLogger::logf("\n");
 }
 
 // Interface callback (USB host library will call)
@@ -263,14 +264,14 @@ void hid_host_interface_callback(hid_host_device_handle_t hid_device_handle, con
       }
       break;
     case HID_HOST_INTERFACE_EVENT_DISCONNECTED:
-      oled_LOGF("HID device disconnected");
+      OledLogger::logf("HID device disconnected");
       ESP_ERROR_CHECK(hid_host_device_close(hid_device_handle));
       break;
     case HID_HOST_INTERFACE_EVENT_TRANSFER_ERROR:
-      oled_LOGF("HID transfer error");
+      OledLogger::logf("HID transfer error");
       break;
     default:
-      oled_LOGF("Unhandled interface event");
+      OledLogger::logf("Unhandled interface event");
       break;
   }
 }
@@ -326,10 +327,10 @@ static void usb_lib_task(void* arg) {
     usb_host_lib_handle_events(portMAX_DELAY, &flags);
     if (flags & USB_HOST_LIB_EVENT_FLAGS_NO_CLIENTS) {
       usb_host_device_free_all();
-      oled_LOGF("USB: NO_CLIENTS");
+      OledLogger::logf("USB: NO_CLIENTS");
     }
     if (flags & USB_HOST_LIB_EVENT_FLAGS_ALL_FREE) {
-      oled_LOGF("USB: ALL_FREE");
+      OledLogger::logf("USB: ALL_FREE");
     }
   }
 }
@@ -347,20 +348,20 @@ static void hid_worker_task(void* pv) {
 void setup() {
   Serial.begin(115200);
   delay(200);
-  if (!oled_INIT(0x3C, 128, 64, 8, 9)) {
-    Serial.println("OLED init failed");
+  if (!OledLogger::begin(0x3C, 128, 64, 8, 9, 16 /*queue len*/)) {
+    Serial.println("OledLogger failed");
   } else {
-    oled_LOGF("OLED ready");
+    OledLogger::logf("Oled ready");
   }
-  oled_LOGF("USB -> NimBLE bridge starting...");
+  OledLogger::logf("USB -> NimBLE bridge starting...");
 
   keyQueue = xQueueCreate(KEYQUEUE_DEPTH, sizeof(KeyEvent));
-  if (!keyQueue) { oled_LOGF("Key queue create failed"); while (1) delay(1000); }
+  if (!keyQueue) { OledLogger::logf("Key queue create failed"); while (1) delay(1000); }
 
   xTaskCreatePinnedToCore(bleTask, "BLETask", BLE_TASK_STACK, NULL, BLE_TASK_PRIO, &bleTaskHandle, 1);
 
   BaseType_t ok = xTaskCreatePinnedToCore(usb_lib_task, "usb_events", 4096, xTaskGetCurrentTaskHandle(), 2, NULL, 0);
-  if (ok != pdTRUE) oled_LOGF("usb_events create failed");
+  if (ok != pdTRUE) OledLogger::logf("usb_events create failed");
 
   // wait for usb host to be ready
   ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(3000));
@@ -378,7 +379,7 @@ void setup() {
   hid_host_event_queue = xQueueCreate(10, sizeof(hid_host_event_queue_t));
   xTaskCreate(hid_worker_task, "hid_worker", 4096, NULL, 2, NULL);
 
-  oled_LOGF("Setup complete. Plug in USB keyboard to S3 host port.");
+  OledLogger::logf("Setup complete. Plug in USB keyboard to S3 host port.");
 }
 
 void loop() {
