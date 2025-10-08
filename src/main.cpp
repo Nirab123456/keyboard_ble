@@ -67,6 +67,27 @@ static TaskHandle_t bleTaskHandle = NULL;
 static inline bool is_shift(uint8_t mod) {
   return (mod & (HID_LEFT_SHIFT | HID_RIGHT_SHIFT)) != 0;
 }
+void setNimBLEPref()
+{
+  const uint16_t PREF_MIN_INTERVAL = 12; // 12 * 1.25ms = 15.0 ms
+  const uint16_t PREF_MAX_INTERVAL = 24; // 24 * 1.25ms = 30.0 ms
+  const uint16_t PREFERRED_MTU     = 247; // a reasonable MTU (<= 247 for best compatibility)
+  // init NimBLE and set preferred params
+  NimBLEDevice::init(BLE_DEVICE_NAME);
+
+  // set transmit power (optional, helps range & reliability)
+  NimBLEDevice::setPower(ESP_PWR_LVL_P9); // +9 dBm (use lower if overheating or regulatory limits)
+
+  // set preferred conn params into advertising data (helps central pick lower latency)
+  NimBLEAdvertising *pAdv = NimBLEDevice::getAdvertising();
+  if (pAdv) {
+    pAdv->setPreferredParams(PREF_MIN_INTERVAL, PREF_MAX_INTERVAL);
+  }
+
+  // request a larger MTU (better throughput for longer notifications; client must accept)
+  NimBLEDevice::setMTU(PREFERRED_MTU);
+}
+
 
 static char usageToAscii(uint8_t usage, uint8_t mods) {
   if (usage >= 0x04 && usage <= 0x1d) {
@@ -110,7 +131,7 @@ void enqueueKey(uint8_t usage, uint8_t mods, bool pressed) {
 void bleTask(void* pv) {
   (void)pv;
   oled_LOGF("[BLE] init");
-
+  setNimBLEPref();
   blekbd.begin();
   oled_LOGF("[BLE] advertising");
 
@@ -326,7 +347,11 @@ static void hid_worker_task(void* pv) {
 void setup() {
   Serial.begin(115200);
   delay(200);
-  oled_INIT();
+  if (!oled_INIT(0x3C, 128, 64, 8, 9)) {
+    Serial.println("OLED init failed");
+  } else {
+    oled_LOGF("OLED ready");
+  }
   oled_LOGF("USB -> NimBLE bridge starting...");
 
   keyQueue = xQueueCreate(KEYQUEUE_DEPTH, sizeof(KeyEvent));
@@ -342,8 +367,8 @@ void setup() {
 
   const hid_host_driver_config_t hid_cfg = {
     .create_background_task = true,
-    .task_priority = 5,
-    .stack_size = 4096,
+    .task_priority = 8,
+    .stack_size = 8192,
     .core_id = 0,
     .callback = hid_host_device_callback,
     .callback_arg = NULL
