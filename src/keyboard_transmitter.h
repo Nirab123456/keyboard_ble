@@ -19,12 +19,21 @@
 #define KEYQUEUE_DEPTH    256
 #define BLE_TASK_STACK    4096
 #define BLE_TASK_PRIO     6
+#define USB_EVENT_STACK   4096
+#define USB_EVENT_PRIO    2
+#define HID_HOST_DRIVER_TASK_PRIO   8
+#define HID_HOST_DRIVER_STACK       8192
+#define HID_WORKER_STACK            4096
+#define HID_WORKER_PRIO             2
+
 
 typedef struct KB_EVENT{
     uint8_t usage;
     uint8_t mods;
     bool pressed;
 };
+// Forward declaration of C wrapper for HID driver callback (we install this as the callback)
+extern "C" void hid_host_device_callback_cwrap(hid_host_device_handle_t hid_device_handle, const hid_host_driver_event_t event, void *arg);
 
 class USBTOBLEKBbridge{
 public:
@@ -47,6 +56,7 @@ private:
         hid_host_driver_event_t event;
         void* arg;
     };
+    QueueHandle_t hid_host_event_queue;
     static USBTOBLEKBbridge* s_instance_ptr;
     void TASK_BLE();
     void TASK_Hid_WORKER();
