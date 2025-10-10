@@ -20,6 +20,12 @@
 #define BLE_TASK_STACK    4096
 #define BLE_TASK_PRIO     6
 
+typedef struct KB_EVENT{
+    uint8_t usage;
+    uint8_t mods;
+    bool pressed;
+};
+
 class USBTOBLEKBbridge{
 public:
     USBTOBLEKBbridge();
@@ -36,7 +42,11 @@ private:
     BleKeyboard             BleKBd;
     TaskHandle_t            BleTaskHandle;
     uint8_t                 active_mods;
-    typedef struct Hid_host_Event_Queue_t;
+    typedef struct Hid_host_Event_Queue_t{
+        hid_host_device_handle_t hdh;
+        hid_host_driver_event_t event;
+        void* arg;
+    };
     static USBTOBLEKBbridge* s_instance_ptr;
     void TASK_BLE();
     void TASK_Hid_WORKER();
