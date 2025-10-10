@@ -23,56 +23,6 @@
 #define BLE_TASK_STACK    4096
 #define BLE_TASK_PRIO     6
 
-// --- Compatibility: ensure modifier macros used in code exist ---
-// Place this right AFTER including hid_usage_keyboard.h
-
-#if defined(HID_LEFT_CONTROL) && !defined(HID_LEFT_CTRL)
-  #define HID_LEFT_CTRL HID_LEFT_CONTROL
-#endif
-#if defined(HID_RIGHT_CONTROL) && !defined(HID_RIGHT_CTRL)
-  #define HID_RIGHT_CTRL HID_RIGHT_CONTROL
-#endif
-
-#ifndef HID_LEFT_CTRL
-  #define HID_LEFT_CTRL   (1U << 0)
-#endif
-#ifndef HID_LEFT_SHIFT
-  #define HID_LEFT_SHIFT  (1U << 1)
-#endif
-#ifndef HID_LEFT_ALT
-  #define HID_LEFT_ALT    (1U << 2)
-#endif
-#ifndef HID_LEFT_GUI
-  #define HID_LEFT_GUI    (1U << 3)
-#endif
-#ifndef HID_RIGHT_CTRL
-  #define HID_RIGHT_CTRL  (1U << 4)
-#endif
-#ifndef HID_RIGHT_SHIFT
-  #define HID_RIGHT_SHIFT (1U << 5)
-#endif
-#ifndef HID_RIGHT_ALT
-  #define HID_RIGHT_ALT   (1U << 6)
-#endif
-#ifndef HID_RIGHT_GUI
-  #define HID_RIGHT_GUI   (1U << 7)
-#endif
-
-#ifndef HID_LEFT_CONTROL
-  #define HID_LEFT_CONTROL HID_LEFT_CTRL
-#endif
-#ifndef HID_RIGHT_CONTROL
-  #define HID_RIGHT_CONTROL HID_RIGHT_CTRL
-#endif
-
-#ifndef KEY_ENTER
-  #if defined(HID_KEY_ENTER)
-    #define KEY_ENTER HID_KEY_ENTER
-  #else
-    #define KEY_ENTER '\r'
-  #endif
-#endif
-
 // -------------------- small types --------------------
 typedef struct {
   uint8_t usage;   // HID usage id (0 if none)
@@ -211,8 +161,8 @@ private:
         uint8_t new_mods = ev.mods;
         if (new_mods != active_mods) {
           uint8_t release_mask = active_mods & ~new_mods;
-          if (release_mask & HID_LEFT_CTRL)  blekbd.release(KEY_LEFT_CTRL);
-          if (release_mask & HID_RIGHT_CTRL) blekbd.release(KEY_RIGHT_CTRL);
+          if (release_mask & HID_LEFT_CONTROL)  blekbd.release(KEY_LEFT_CTRL);
+          if (release_mask & HID_RIGHT_CONTROL) blekbd.release(KEY_RIGHT_CTRL);
           if (release_mask & HID_LEFT_SHIFT) blekbd.release(KEY_LEFT_SHIFT);
           if (release_mask & HID_RIGHT_SHIFT) blekbd.release(KEY_RIGHT_SHIFT);
           if (release_mask & HID_LEFT_ALT)   blekbd.release(KEY_LEFT_ALT);
@@ -221,8 +171,8 @@ private:
           if (release_mask & HID_RIGHT_GUI)  blekbd.release(KEY_RIGHT_GUI);
 
           uint8_t press_mask = new_mods & ~active_mods;
-          if (press_mask & HID_LEFT_CTRL)  blekbd.press(KEY_LEFT_CTRL);
-          if (press_mask & HID_RIGHT_CTRL) blekbd.press(KEY_RIGHT_CTRL);
+          if (press_mask & HID_LEFT_CONTROL)  blekbd.press(KEY_LEFT_CTRL);
+          if (press_mask & HID_RIGHT_CONTROL) blekbd.press(KEY_RIGHT_CTRL);
           if (press_mask & HID_LEFT_SHIFT) blekbd.press(KEY_LEFT_SHIFT);
           if (press_mask & HID_RIGHT_SHIFT) blekbd.press(KEY_RIGHT_SHIFT);
           if (press_mask & HID_LEFT_ALT)   blekbd.press(KEY_LEFT_ALT);
@@ -241,7 +191,7 @@ private:
         } else {
           if (ev.pressed) {
             switch (ev.usage) {
-              case 0x28: blekbd.write(KEY_ENTER); break;
+              case 0x28: blekbd.write(HID_KEY_ENTER); break;
               case 0x29: blekbd.write(0x1B); break;
               case 0x2a: blekbd.write(KEY_BACKSPACE); break;
               case 0x2b: blekbd.write(KEY_TAB); break;
