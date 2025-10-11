@@ -7,6 +7,17 @@ USBTOBLEKBbridge:: USBTOBLEKBbridge()
     active_mods(0),
     hid_host_event_queue(nullptr)
 {}
+
+USBTOBLEKBbridge* USBTOBLEKBbridge:: s_instance_ptr = nullptr;
+USBTOBLEKBbridge* USBTOBLEKBbridge :: instance()
+{
+    return s_instance_ptr;
+}
+void USBTOBLEKBbridge::set_instance(USBTOBLEKBbridge* p)
+{
+    s_instance_ptr = p;
+}
+
 bool USBTOBLEKBbridge::begin()
 {
     if (!OledLogger::begin(0x3c,128,64.8,9,16))
@@ -72,12 +83,6 @@ bool USBTOBLEKBbridge::begin()
     return true;
 }
 
-void USBTOBLEKBbridge::TASK_Ble_Wrapper(void* pv)
-{
-    USBTOBLEKBbridge* instance = static_cast<USBTOBLEKBbridge*>(pv);
-    instance -> TASK_BLE();
-}
-
 void USBTOBLEKBbridge::enqueueKey(uint8_t usage,uint8_t mods,bool pressed)
 {
     if (!KBQueue)
@@ -101,3 +106,32 @@ void USBTOBLEKBbridge::enqueueKey(uint8_t usage,uint8_t mods,bool pressed)
         xQueueSend(KBQueue,&event,0);
     }
 }
+void USBTOBLEKBbridge::TASK_Ble_Wrapper(void* pv)
+{
+    USBTOBLEKBbridge* instance = static_cast<USBTOBLEKBbridge*>(pv);
+    instance -> TASK_BLE();
+}
+
+void USBTOBLEKBbridge::TASK_Usb_lib_Wrapper(void* pv)
+{
+    USBTOBLEKBbridge::TASK_Usb_LIBRARY(pv);
+}
+void USBTOBLEKBbridge::Hid_Worker_Wrapper(void* pv)
+{
+    USBTOBLEKBbridge* instance = static_cast<USBTOBLEKBbridge*>(pv);
+}
+
+void USBTOBLEKBbridge:: Hid_Host_Device_Callback(hid_host_device_handle_t hdh,const hid_host_driver_event_t event, void* arg)
+{
+    if(!instance)
+    {
+        return;
+    }
+    Hid_host_Event_Queue_t ev = {
+        .hdh = hdh,
+        .event = event,
+        .arg = arg
+    };
+    xQueueSend(instance()->hid_host_event_queue,&event,0);
+}
+

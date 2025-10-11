@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "compare": "cpp",
+        "memory_resource": "cpp",
+        "memory": "cpp",
+        "functional": "cpp",
+        "type_traits": "cpp",
+        "utility": "cpp"
+    }
+}
