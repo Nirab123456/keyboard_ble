@@ -1,5 +1,6 @@
 #include "keyboard_transmitter.h"
 
+
 USBTOBLEKBbridge:: USBTOBLEKBbridge()
     :KBQueue(nullptr),
     BleKBd(BLE_DEVICE_NAME),
@@ -199,14 +200,78 @@ void USBTOBLEKBbridge::TASK_BLE()
                 }
                 else if (press_mask & HID_RIGHT_CONTROL)
                 {
-                    BleKBd.press(KEY_RIGHT_SHIFT)
+                    BleKBd.press(KEY_RIGHT_SHIFT);
                 }
-                    
+                else if (press_mask & HID_LEFT_SHIFT)
+                {
+                    BleKBd.press(KEY_LEFT_SHIFT);
+                }
+                else if (press_mask & HID_RIGHT_SHIFT)
+                {
+                    BleKBd.press(KEY_RIGHT_SHIFT);
+                }
+                else if (press_mask & HID_LEFT_ALT)
+                {
+                    BleKBd.press(KEY_LEFT_ALT);
+                }
+                else if (press_mask & HID_RIGHT_ALT)
+                {
+                    BleKBd.press(KEY_RIGHT_ALT);
+                }
+                else if (press_mask & HID_LEFT_GUI)
+                {
+                    BleKBd.press(KEY_LEFT_GUI);
+                }
+                else if (press_mask & HID_RIGHT_GUI)
+                {
+                    BleKBd.press(KEY_RIGHT_GUI);
+                }
                 
-                
-                
+                active_mods = new_mods;
+            }
+            
+            if (event.usage==0)
+            {
+                continue;
+            }
+            char ch = usage_TO_ASCII(event.usage,event.mods);
+            if (ch)
+            {
+                if (event.pressed)
+                {
+                    BleKBd.write(ch);
+                }
                 
             }
+            else
+            {
+                if (event.pressed)
+                {
+                    switch(event.usage)
+                    {
+                        case HID_KEY_ENTER      : BleKBd.write(HID_KEY_ENTER);break;
+                        case HID_KEY_ESC        : BleKBd.write(KEY_ESC);break;
+                        case HID_KEY_CAPS_LOCK  : BleKBd.write(KEY_CAPS_LOCK);break;
+                        case MY_HID_BACKSPACE   : BleKBd.write(KEY_BACKSPACE);break; // dbm(defined by me)
+                        case HID_KEY_TAB        : BleKBd.write(KEY_TAB);break;
+                        case HID_KEY_F1         : BleKBd.press(KEY_F1); BleKBd.release(KEY_F1); break;
+                        case HID_KEY_F2         : BleKBd.press(KEY_F2); BleKBd.release(KEY_F2); break;
+                        case HID_KEY_F3         : BleKBd.press(KEY_F2); BleKBd.release(KEY_F3); break;
+                        case HID_KEY_F4         : BleKBd.press(KEY_F2); BleKBd.release(KEY_F4); break;
+                        case HID_KEY_F5         : BleKBd.press(KEY_F2); BleKBd.release(KEY_F5); break;
+                        case HID_KEY_F6         : BleKBd.press(KEY_F2); BleKBd.release(KEY_F6); break;
+                        case HID_KEY_F7         : BleKBd.press(KEY_F2); BleKBd.release(KEY_F7); break;
+                        case HID_KEY_F8         : BleKBd.press(KEY_F2); BleKBd.release(KEY_F8); break;
+                        case HID_KEY_F9         : BleKBd.press(KEY_F2); BleKBd.release(KEY_F9); break;
+                        case HID_KEY_F10        : BleKBd.press(KEY_F2); BleKBd.release(KEY_F10); break;
+                        case HID_KEY_F11        : BleKBd.press(KEY_F2); BleKBd.release(KEY_F11); break;
+                        case HID_KEY_F12        : BleKBd.press(KEY_F2); BleKBd.release(KEY_F12); break;
+
+                    }
+                }
+                
+            }
+            
             
             
         }

@@ -26,6 +26,10 @@
 #define HID_WORKER_STACK            4096
 #define HID_WORKER_PRIO             2
 
+//key DEFINATION
+#define MY_HID_BACKSPACE            0x2A
+          
+
 
 typedef struct KB_EVENT{
     uint8_t usage;
