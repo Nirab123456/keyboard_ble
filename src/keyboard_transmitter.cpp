@@ -111,7 +111,6 @@ void USBTOBLEKBbridge::TASK_Ble_Wrapper(void* pv)
     USBTOBLEKBbridge* instance = static_cast<USBTOBLEKBbridge*>(pv);
     instance -> TASK_BLE();
 }
-
 void USBTOBLEKBbridge::TASK_Usb_lib_Wrapper(void* pv)
 {
     USBTOBLEKBbridge::TASK_Usb_LIBRARY(pv);
@@ -135,3 +134,83 @@ void USBTOBLEKBbridge:: Hid_Host_Device_Callback(hid_host_device_handle_t hdh,co
     xQueueSend(instance()->hid_host_event_queue,&event,0);
 }
 
+void USBTOBLEKBbridge::TASK_BLE()
+{
+    setNimBLE_PREF();
+    BleKBd.begin();
+    OledLogger::logf("BLE:ADVERTISING");
+    KB_EVENT event;
+    for(;;)
+    {
+        if (xQueueReceive(KBQueue,&event,portMAX_DELAY)==pdTRUE)
+        {
+            OledLogger::logf(
+                "EVENT: USED =0x%02x,\n mods =0x%02x\nPressed:%d",
+                    event.usage,
+                    event.mods,
+                    event.pressed
+            );
+            if (!BleKBd.isConnected())
+            {
+                continue;
+            }
+            uint8_t new_mods = event.mods;
+            
+            if (new_mods != active_mods)
+            {
+                uint8_t relese_mask = active_mods & ~new_mods;
+                if (relese_mask&HID_LEFT_CONTROL)
+                {
+                    BleKBd.release(KEY_LEFT_CTRL);
+                }
+                else if (relese_mask & HID_RIGHT_CONTROL)
+                {
+                    BleKBd.release(KEY_RIGHT_CTRL);
+                }
+                else if (relese_mask & HID_LEFT_SHIFT)
+                {
+                    BleKBd.release(KEY_LEFT_SHIFT);
+                }
+                else if (relese_mask & HID_RIGHT_SHIFT)
+                {
+                    BleKBd.release(KEY_RIGHT_SHIFT);
+                }
+                else if (relese_mask & HID_LEFT_ALT)
+                {
+                    BleKBd.release(KEY_LEFT_ALT);
+                }
+                else if (relese_mask & HID_RIGHT_ALT)
+                {
+                    BleKBd.release(KEY_RIGHT_ALT);
+                }
+                else if (relese_mask & HID_LEFT_GUI)
+                {
+                    BleKBd.release(KEY_LEFT_GUI);
+                }
+                else if (relese_mask & HID_RIGHT_GUI)
+                {
+                    BleKBd.release(KEY_RIGHT_GUI);
+                }
+
+                uint8_t press_mask =  new_mods & ~active_mods;
+                if (press_mask & HID_LEFT_CONTROL)
+                {
+                    BleKBd.press(KEY_LEFT_CTRL);
+                }
+                else if (press_mask & HID_RIGHT_CONTROL)
+                {
+                    BleKBd.press(KEY_RIGHT_SHIFT)
+                }
+                    
+                
+                
+                
+                
+            }
+            
+            
+        }
+        
+    }
+    
+}
