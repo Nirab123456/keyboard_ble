@@ -69,7 +69,7 @@ bool USBTOBLEKBbridge::begin()
         .callback_arg = NULL
     };
     ESP_ERROR_CHECK(hid_host_install(&HHD_cfg));
-    hid_host_event_queue = xQueueCreate(10,sizeof(Hid_host_Event_Queue_t));
+    hid_host_event_queue = xQueueCreate(10,sizeof(HidKB_host_Event_Queue_t));
 
     xTaskCreate(
         Hid_Worker_Wrapper,
@@ -127,12 +127,26 @@ void USBTOBLEKBbridge:: Hid_Host_Device_Callback(hid_host_device_handle_t hdh,co
     {
         return;
     }
-    Hid_host_Event_Queue_t ev = {
+    HidKB_host_Event_Queue_t ev = {
         .hdh = hdh,
         .event = event,
         .arg = arg
     };
     xQueueSend(instance()->hid_host_event_queue,&event,0);
+}
+
+void USBTOBLEKBbridge::TASK_Hid_WORKER()
+{
+    HidKB_host_Event_Queue_t event;
+    while (true)
+    {
+        if (xQueueReceive(hid_host_event_queue,&event,pdMS_TO_TICKS(50)))
+        {
+            hid_Host_Device_EVENT(event.hdh,event.event,event.arg);
+        }
+        
+    }
+    
 }
 
 void USBTOBLEKBbridge::TASK_BLE()
@@ -252,7 +266,7 @@ void USBTOBLEKBbridge::TASK_BLE()
                         case HID_KEY_ENTER      : BleKBd.write(HID_KEY_ENTER);break;
                         case HID_KEY_ESC        : BleKBd.write(KEY_ESC);break;
                         case HID_KEY_CAPS_LOCK  : BleKBd.write(KEY_CAPS_LOCK);break;
-                        case MY_HID_BACKSPACE   : BleKBd.write(KEY_BACKSPACE);break; // dbm(defined by me)
+                        case HID_KEY_DEL        : BleKBd.write(KEY_BACKSPACE);break; 
                         case HID_KEY_TAB        : BleKBd.write(KEY_TAB);break;
                         case HID_KEY_F1         : BleKBd.press(KEY_F1); BleKBd.release(KEY_F1); break;
                         case HID_KEY_F2         : BleKBd.press(KEY_F2); BleKBd.release(KEY_F2); break;
@@ -266,14 +280,17 @@ void USBTOBLEKBbridge::TASK_BLE()
                         case HID_KEY_F10        : BleKBd.press(KEY_F2); BleKBd.release(KEY_F10); break;
                         case HID_KEY_F11        : BleKBd.press(KEY_F2); BleKBd.release(KEY_F11); break;
                         case HID_KEY_F12        : BleKBd.press(KEY_F2); BleKBd.release(KEY_F12); break;
+                        case HID_KEY_LEFT       : BleKBd.press(KEY_LEFT_ARROW); BleKBd.release(KEY_LEFT_ARROW); break;
+                        case HID_KEY_RIGHT      : BleKBd.press(KEY_RIGHT_ARROW); BleKBd.release(KEY_RIGHT_ARROW); break;
+                        case HID_KEY_UP         : BleKBd.press(KEY_UP_ARROW); BleKBd.release(KEY_UP_ARROW); break;
+                        default:
+                            OledLogger::logf("UNKNOWN US: 0x%02x",event.usage);
+                            break;
 
                     }
                 }
                 
-            }
-            
-            
-            
+            } 
         }
         
     }
