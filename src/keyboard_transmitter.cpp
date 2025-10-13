@@ -149,6 +149,80 @@ void USBTOBLEKBbridge::TASK_Hid_WORKER()
     
 }
 
+void USBTOBLEKBbridge::TASK_Usb_LIBRARY(void* arg)
+{
+    const usb_host_config_t host_config ={
+        .skip_phy_setup = false,
+        .intr_flags = ESP_INTR_FLAG_LEVEL1
+    };
+    ESP_ERROR_CHECK(usb_host_install(&host_config));
+    xTaskNotifyGive((TaskHandle_t)arg);
+    while (true)
+    {
+        uint32_t flags;
+        usb_host_lib_handle_events(portMAX_DELAY,&flags);
+        if (flags & USB_HOST_LIB_EVENT_FLAGS_NO_CLIENTS)
+        {
+            usb_host_device_free_all();
+            OledLogger::logf("USB : NO CLIENT");
+        }
+        if (flags& USB_HOST_LIB_EVENT_FLAGS_ALL_FREE)
+        {
+            OledLogger::logf("USB : ALL FREE");
+        }
+        
+    }
+    
+}
+
+bool USBTOBLEKBbridge::is_SHIFT(uint8_t mods)
+{
+    return (mods&(HID_LEFT_SHIFT | HID_RIGHT_SHIFT)) !=0;
+}
+
+char USBTOBLEKBbridge::usage_TO_ASCII(uint8_t usage, uint8_t mods)
+{
+    bool shift = is_SHIFT(mods);
+    if (usage>=HID_ALPHABET_START && usage<=HID_ALPHABET_ENDING )
+    {
+        char c = 'a' +(usage-HID_ALPHABET_START);
+        if (is_SHIFT)
+        {
+            c = (char)toupper(c);
+        }
+        return c;
+    }
+    if (usage>=HID_TOP_ROW_NS_START && usage<= HID_TOP_ROW_NS_ENDING)
+    {
+        int idx = usage - HID_TOP_ROW_NS_START;
+        if (shift)
+        {
+            return TOPROW_SHIFTED[idx];
+        }
+        return TOPROW_NORMAL[idx];
+    }
+    switch (usage)
+    {
+    case HID_KEY_ENTER              : return MY_KEY_ENTER;
+    case HID_KEY_ESC                : return KEY_ESC;
+    case HID_KEY_TAB                : return KEY_TAB;
+    case HID_KEY_SPACE              : return MY_KEY_SPACE;
+    case HID_KEY_MINUS              : return (shift ? S_MY_KEY_MINUS : MY_KEY_MINUS);
+    case HID_KEY_EQUAL              : return (shift ? S_MY_KEY_EQUAL : MY_KEY_EQUAL);
+    case HID_KEY_OPEN_BRACKET       : return (shift ? S_MY_KEY_OPEN_BRACES : MY_KEY_OPEN_BRACES);
+    case HID_KEY_CLOSE_BRACKET      : return (shift ? S_MY_KEY_CLOSE_BRACES : MY_KEY_CLOSE_BRACES);
+    case HID_KEY_BACK_SLASH         : return (shift ? S_MY_KEY_BACK_SLASH : MY_KEY_BACK_SLASH);
+    case 0x32
+    
+    default:
+        break;
+    }
+    
+    
+}
+
+
+
 void USBTOBLEKBbridge::TASK_BLE()
 {
     setNimBLE_PREF();
@@ -263,9 +337,9 @@ void USBTOBLEKBbridge::TASK_BLE()
                 {
                     switch(event.usage)
                     {
-                        case HID_KEY_ENTER      : BleKBd.write(HID_KEY_ENTER);break;
+                        case HID_KEY_ENTER      : BleKBd.write(MY_KEY_ENTER);break;
                         case HID_KEY_ESC        : BleKBd.write(KEY_ESC);break;
-                        case HID_KEY_CAPS_LOCK  : BleKBd.write(KEY_CAPS_LOCK);break;
+                        case HID_KEY_CAPS_LOCK  : BleKBd.write(KEY_CAPS_LOCK);break; // not sure about capslock validity.
                         case HID_KEY_DEL        : BleKBd.write(KEY_BACKSPACE);break; 
                         case HID_KEY_TAB        : BleKBd.write(KEY_TAB);break;
                         case HID_KEY_F1         : BleKBd.press(KEY_F1); BleKBd.release(KEY_F1); break;

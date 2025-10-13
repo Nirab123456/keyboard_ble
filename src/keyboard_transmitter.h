@@ -25,9 +25,24 @@
 #define HID_HOST_DRIVER_STACK       8192
 #define HID_WORKER_STACK            4096
 #define HID_WORKER_PRIO             2
-
+#define HID_ALPHABET_START          0x04
+#define HID_ALPHABET_ENDING         0x1D
+#define HID_TOP_ROW_NS_START        0x1E
+#define HID_TOP_ROW_NS_ENDING       0x27
+#define MY_KEY_ENTER                '\r'
 //key DEFINATION
+const char MY_KEY_SPACE             = ' ';
+const char MY_KEY_MINUS             = '-';
+const char S_MY_KEY_MINUS           = '_';         
+const char S_MY_KEY_EQUAL           = '+';
+const char MY_KEY_EQUAL             = '=';
+const char S_MY_KEY_OPEN_BRACES     = '{';
+const char MY_KEY_OPEN_BRACES       = '[';
+const char S_MY_KEY_CLOSE_BRACES    = '}';
+const char MY_KEY_CLOSE_BRACES      = ']';
 
+const char TOPROW_NORMAL[] = "1234567890";
+const char TOPROW_SHIFTED[] = "!@#$%^&*()";
 
 typedef struct KB_EVENT{
     uint8_t usage;
