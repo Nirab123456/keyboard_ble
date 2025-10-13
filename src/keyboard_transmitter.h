@@ -40,6 +40,9 @@ const char S_MY_KEY_OPEN_BRACES     = '{';
 const char MY_KEY_OPEN_BRACES       = '[';
 const char S_MY_KEY_CLOSE_BRACES    = '}';
 const char MY_KEY_CLOSE_BRACES      = ']';
+const char S_MY_KEY_BACK_SLASH      = '\\';
+const char MY_KEY_BACK_SLASH        = '|';
+
 
 const char TOPROW_NORMAL[] = "1234567890";
 const char TOPROW_SHIFTED[] = "!@#$%^&*()";
