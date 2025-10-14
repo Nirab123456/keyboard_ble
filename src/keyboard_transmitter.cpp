@@ -228,6 +228,34 @@ char USBTOBLEKBbridge::usage_TO_ASCII(uint8_t usage, uint8_t mods)
 }
 
 
+void USBTOBLEKBbridge::hid_Host_Device_EVENT(hid_host_device_handle_t hdh, const hid_host_driver_event_t event, void* arg)
+{
+    hid_host_dev_params_t hhdps;
+    ESP_ERROR_CHECK(hid_host_device_get_params(hdh,&hhdps));
+    const hid_host_device_config_t dev_config = {
+        .callback = hid_Host_Interface_CALLBACK,
+        .callback_arg = NULL
+    };
+    switch (event)
+    {
+    case HID_HOST_DRIVER_EVENT_CONNECTED:
+        OledLogger::logf("CONNECTED PTC : %d",hhdps.proto);
+        ESP_ERROR_CHECK(hid_host_device_open(hdh,&dev_config));
+        if (hhdps.sub_class==HID_SUBCLASS_BOOT_INTERFACE)
+        {
+            ESP_ERROR_CHECK(hid_class_request_set_protocol(hdh,HID_REPORT_PROTOCOL_BOOT));
+            if (hhdps.proto == HID_PROTOCOL_KEYBOARD)
+            {
+                ESP_ERROR_CHECK(hid_class_request_set_idle(hdh,0,0));
+            }   
+        }
+        ESP_ERROR_CHECK(hid_host_device_start(hdh));
+        break;
+    default:
+        break;
+    }
+
+}
 
 void USBTOBLEKBbridge::TASK_BLE()
 {
