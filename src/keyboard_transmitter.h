@@ -42,6 +42,19 @@ const char S_MY_KEY_CLOSE_BRACES    = '}';
 const char MY_KEY_CLOSE_BRACES      = ']';
 const char S_MY_KEY_BACK_SLASH      = '\\';
 const char MY_KEY_BACK_SLASH        = '|';
+const char S_MY_KEY_COLON           = ':';
+const char MY_KEY_COLON             = ';';
+const char S_MY_KEY_QUOTE           = '"';
+const char MY_KEY_QUOTE             = '\'';
+const char S_MY_KEY_TILDE           = '~';
+const char MY_KEY_TILDE             = '`';
+const char S_MY_KEY_LESS            = '<';
+const char MY_KEY_LESS              = ',';  
+const char S_MY_KEY_GREATER         = '>';
+const char MY_KEY_GREATER           = '.';
+const char S_MY_KEY_SLASH           = '?';
+const char MY_KEY_SLASH             = '/'; 
+
 
 
 const char TOPROW_NORMAL[] = "1234567890";
