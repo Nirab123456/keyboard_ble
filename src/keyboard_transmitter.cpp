@@ -351,7 +351,51 @@ void USBTOBLEKBbridge:: hid_MOUSE_Report_CALLBACK(const uint8_t *const data,cons
     OledLogger::logf("MOUSE= B:%02x X:%d Y:%d W:%d",m->buttons,m->x,m->y,m->wheel);
     
 }
+void USBTOBLEKBbridge::hid_Host_Generic_Report_CALLBACK(const uint8_t *const data, const int len)
+{
+    char buf[64];
+    int n = snprintf(buf,sizeof(buf),"GENERIC %d:",len);
+    for (size_t i = 0; 
+        i < min(10,len) && n < (int)sizeof(buf)-3; 
+        i++)
+    {
+        n+= snprintf(buf+n, sizeof(buf)-n, " %02X0",data[i]);
+    }
+    OledLogger::logf("%s",buf);
 
+}
+
+void USBTOBLEKBbridge::hid_Host_Interface_CALLBACK(hid_host_device_handle_t hdh, hid_host_interface_event_t event, void* arg)
+{
+    uint8_t data[64];
+    size_t data_len = 0;
+    hid_host_dev_params_t marks_params;
+    ESP_ERROR_CHECK(hid_host_device_get_params(hdh,&marks_params));
+    switch (event)
+    {
+    case HID_HOST_INTERFACE_EVENT_INPUT_REPORT:
+        ESP_ERROR_CHECK(hid_host_device_get_raw_input_report_data(hdh,data,sizeof(data),&data_len));
+        if (marks_params.sub_class == HID_SUBCLASS_BOOT_INTERFACE && marks_params.proto == HID_PROTOCOL_KEYBOARD)
+        {
+            hid_KB_Report_CALLBACK(data,(int)data_len);
+        }
+        else if (marks_params.sub_class == HID_SUBCLASS_BOOT_INTERFACE && marks_params.proto ==HID_PROTOCOL_MOUSE)
+        {
+            hid_MOUSE_Report_CALLBACK(data,(int)data_len);
+        }
+        else
+        {
+            hid_Host_Generic_Report_CALLBACK(data,(int)data_len);
+        }
+        
+        
+
+        break;
+    
+    default:
+        break;
+    }
+}
 void USBTOBLEKBbridge::TASK_BLE()
 {
     setNimBLE_PREF();

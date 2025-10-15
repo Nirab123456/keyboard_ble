@@ -101,4 +101,5 @@ private:
     static void hid_KB_Report_CALLBACK(const uint8_t *const data, const int len);
     static void hid_MOUSE_Report_CALLBACK(const uint8_t *const data, const int length);
     static void setNimBLE_PREF();
+    static void hid_Host_Generic_Report_CALLBACK(const uint8_t *const data, const int len);
 };
