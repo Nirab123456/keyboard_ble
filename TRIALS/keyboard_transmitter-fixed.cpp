@@ -337,11 +337,11 @@ void USBTOBLEKBbridge::hid_Host_Generic_Report_CALLBACK(const uint8_t *const dat
   OledLogger::logf("%s", buf);
 }
 
-// ----------------- C wrapper for interface callback -----------------
-extern "C" void hid_host_interface_callback_cwrap(hid_host_device_handle_t hdh, const hid_host_interface_event_t event, void* arg) {
-  USBTOBLEKBbridge* inst = USBTOBLEKBbridge::instance();
-  if (inst) inst->hid_Host_Interface_CALLBACK(hdh, event, arg);
-}
+// // ----------------- C wrapper for interface callback -----------------
+// extern "C" void hid_host_interface_callback_cwrap(hid_host_device_handle_t hdh, const hid_host_interface_event_t event, void* arg) {
+//   USBTOBLEKBbridge* inst = USBTOBLEKBbridge::instance();
+//   if (inst) inst->hid_Host_Interface_CALLBACK(hdh, event, arg);
+// }
 
 // ----------------- interface callback (parses input reports) -----------------
 void USBTOBLEKBbridge::hid_Host_Interface_CALLBACK(hid_host_device_handle_t hdh, const hid_host_interface_event_t event, void* arg) {

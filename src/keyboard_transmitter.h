@@ -25,10 +25,10 @@
 #define HID_HOST_DRIVER_STACK       8192
 #define HID_WORKER_STACK            4096
 #define HID_WORKER_PRIO             2
-#define HID_ALPHABET_START          0x04
-#define HID_ALPHABET_ENDING         0x1D
-#define HID_TOP_ROW_NS_START        0x1E
-#define HID_TOP_ROW_NS_ENDING       0x27
+// #define HID_ALPHABET_START          0x04
+// #define HID_ALPHABET_ENDING         0x1D
+// #define HID_TOP_ROW_NS_START        0x1E
+// #define HID_TOP_ROW_NS_ENDING       0x27
 #define MY_KEY_ENTER                '\r'
 //key DEFINATION
 const char MY_KEY_SPACE             = ' ';
@@ -82,6 +82,7 @@ public:
     static void Hid_Host_Device_Callback(hid_host_device_handle_t hid_HDH,const hid_host_driver_event_t event,void* arg);
     static USBTOBLEKBbridge* instance();
     static void set_instance(USBTOBLEKBbridge* p);
+    static void hid_host_Interface_callback_FORWARD(hid_host_device_handle_t hdh, const hid_host_interface_event_t event,void* arg);
 private:
     QueueHandle_t           KBQueue;
     BleKeyboard             BleKBd;
