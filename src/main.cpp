@@ -1,10 +1,11 @@
 #include "helper_keyboard_ble.h"
 #include <OledLogger.h>
+#include <keyboard_transmitter.h>
 #define COMMAND_BATTERY_MONITOR_START   "bmon-start"
 #define COMMAND_SERIAL_LOOP_CALIBRATION "_l_bserial-cal"
 BatteryMonitorClass batmon;
 static String _line;
-
+static USBTOBLEKBbridge global_bridge;
 
 void setup()
 {
@@ -19,6 +20,7 @@ void setup()
     //battery monitor
     batmon.begin();
     batmon.printHELP();
+    //Initiate keyboard
 }
 
 void loop()
