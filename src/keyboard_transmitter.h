@@ -98,7 +98,7 @@ private:
     static char usage_TO_ASCII(uint8_t usage, uint8_t mods);
     static void hid_Host_Interface_CALLBACK(hid_host_device_handle_t hdh,hid_host_interface_event_t event,void* arg);
     static void hid_Host_Device_EVENT(hid_host_device_handle_t hdh, const hid_host_driver_event_t event,void* arg);    
-    static void hid_KB_Report_CALLBACK(const uint8_t *const data, const int length);
+    static void hid_KB_Report_CALLBACK(const uint8_t *const data, const int len);
     static void hid_MOUSE_Report_CALLBACK(const uint8_t *const data, const int length);
     static void setNimBLE_PREF();
 };

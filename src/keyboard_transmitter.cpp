@@ -256,6 +256,101 @@ void USBTOBLEKBbridge::hid_Host_Device_EVENT(hid_host_device_handle_t hdh, const
     }
 
 }
+void USBTOBLEKBbridge::hid_KB_Report_CALLBACK(const uint8_t* const data,const int len)
+{
+    if (len < (int)sizeof(hid_keyboard_input_report_boot_t))
+    {
+        return;
+    }
+    const hid_keyboard_input_report_boot_t* KB_report_ptr = (const hid_keyboard_input_report_boot_t*)data;
+    //show report on oled
+    {
+        char buf[64];
+        int n = snprintf(buf,sizeof(buf),
+                "RAW : 0x%02x",KB_report_ptr->modifier.val);
+        for (size_t i = 0; i < HID_KEYBOARD_KEY_MAX && n < (int)sizeof(buf)-4; i++)
+        {
+            n+= snprintf(buf+n, sizeof(buf)-n, " %02x",KB_report_ptr->key[i]);
+        }
+        OledLogger::logf("%s",buf);
+    }
+
+    static uint8_t prev[HID_KEYBOARD_KEY_MAX] = {0};
+    static uint8_t prev_mods = 0;
+    uint8_t curr_mods = KB_report_ptr -> modifier.val;
+
+    //relese
+    for (size_t i = 0; i < HID_KEYBOARD_KEY_MAX; i++)
+    {
+        uint8_t pk = prev[i];
+        if (pk> HID_KEY_ERROR_UNDEFINED)
+        {
+            bool still = false;
+            for (size_t j = 0; j < HID_KEYBOARD_KEY_MAX; j++)
+            {
+                if (KB_report_ptr->key[j]==pk)
+                {
+                    still = true;
+                    break;
+                }
+                if (!still)
+                {
+                    if (instance())
+                    {
+                        instance()->enqueueKey(pk,prev_mods,false);
+                    }   
+                }   
+            }   
+        }
+    }
+
+    //presses
+    for (size_t i = 0; i < HID_KEYBOARD_KEY_MAX; i++)
+    {
+        uint8_t k = KB_report_ptr ->key[i];
+        if (k > HID_KEY_ERROR_UNDEFINED)
+        {
+            bool was = false;
+            for (size_t j = 0; i < HID_KEYBOARD_KEY_MAX; j++)
+            {
+                if (prev[j]==k)
+                {
+                    was = true;
+                    break;
+                }
+                if (!was)
+                {
+                    if (instance())
+                    {
+                        instance() -> enqueueKey(k,curr_mods,true);
+                    }   
+                }   
+            }   
+        }
+    }
+    
+    memcpy(prev,KB_report_ptr->key,HID_KEYBOARD_KEY_MAX);
+    prev_mods = curr_mods;
+    
+}
+
+void USBTOBLEKBbridge:: hid_MOUSE_Report_CALLBACK(const uint8_t *const data,const int length)
+{
+    if (length<3)
+    {
+        return;
+    }
+    typedef struct __attribute__((packed)) 
+    {
+        uint8_t buttons;
+        int8_t x;
+        int8_t y;
+        int8_t wheel;
+    }hid_MOUSR_REPORT_T;
+    const hid_MOUSR_REPORT_T *m = (const hid_MOUSR_REPORT_T*)data;
+    OledLogger::logf("MOUSE= B:%02x X:%d Y:%d W:%d",m->buttons,m->x,m->y,m->wheel);
+    
+}
 
 void USBTOBLEKBbridge::TASK_BLE()
 {
