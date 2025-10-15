@@ -387,15 +387,30 @@ void USBTOBLEKBbridge::hid_Host_Interface_CALLBACK(hid_host_device_handle_t hdh,
         {
             hid_Host_Generic_Report_CALLBACK(data,(int)data_len);
         }
-        
-        
-
         break;
-    
+    case HID_HOST_INTERFACE_EVENT_DISCONNECTED:
+        OledLogger::logf("DEVICE DISCONNECTED!");
+        ESP_ERROR_CHECK(hid_host_device_close(hdh));
+        break;
+    case HID_HOST_INTERFACE_EVENT_TRANSFER_ERROR:
+        OledLogger::logf("HID: Transfer Error!");
     default:
+        OledLogger::logf("HID: Unhandeled Event !");
         break;
     }
 }
+void USBTOBLEKBbridge:: setNimBLE_PREF()
+{
+    NimBLEDevice::init(BLE_DEVICE_NAME);
+    NimBLEDevice::setPower(ESP_PWR_LVL_P9);
+    NimBLEAdvertising* p_ble_device = NimBLEDevice::getAdvertising();
+    if (p_ble_device)
+    {
+        p_ble_device -> setPreferredParams(PREF_MIN_INTERVAL,PREF_MAX_INTERVAL);
+        NimBLEDevice::setMTU(PREFERED_MTU);
+    }
+}
+
 void USBTOBLEKBbridge::TASK_BLE()
 {
     setNimBLE_PREF();

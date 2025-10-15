@@ -54,7 +54,10 @@ const char S_MY_KEY_GREATER         = '>';
 const char MY_KEY_GREATER           = '.';
 const char S_MY_KEY_SLASH           = '?';
 const char MY_KEY_SLASH             = '/'; 
-
+//nimble const
+const uint16_t  PREF_MIN_INTERVAL = 5;
+const uint16_t  PREF_MAX_INTERVAL = 24;
+const uint16_t  PREFERED_MTU      = 247;
 
 
 const char TOPROW_NORMAL[] = "1234567890";
