@@ -21,21 +21,33 @@ void setup()
     batmon.begin();
     batmon.printHELP();
     //Initiate keyboard
+    USBTOBLEKBbridge::set_instance(&global_bridge);
+    if (!global_bridge.begin())
+    {
+      OledLogger::logf("KB : Begain Failed");
+      for (;;)
+      {
+        vTaskDelay(pdMS_TO_TICKS(1000));
+      }
+      
+    }
+    
 }
 
 void loop()
 {
-
-  while (Serial.available()) {
-    char c = Serial.read();
-    if (c == '\r') continue;
-    if (c == '\n') {
-      batmon.processSerialLINE(_line);
-      _line = "";
-    } else {
-      _line += c;
-      if (_line.length() > 128) _line = _line.substring(0, 128);
-    }
-  }
+  vTaskDelay(pdMS_TO_TICKS(1000));
+ 
+  // while (Serial.available()) {
+  //   char c = Serial.read();
+  //   if (c == '\r') continue;
+  //   if (c == '\n') {
+  //     batmon.processSerialLINE(_line);
+  //     _line = "";
+  //   } else {
+  //     _line += c;
+  //     if (_line.length() > 128) _line = _line.substring(0, 128);
+  //   }
+  // }
 
 }

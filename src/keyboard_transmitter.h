@@ -71,6 +71,8 @@ typedef struct KB_EVENT{
 // Forward declaration of C wrapper for HID driver callback (we install this as the callback)
 extern "C" void hid_host_device_callback_cwrap(hid_host_device_handle_t hid_device_handle, const hid_host_driver_event_t event, void *arg);
 
+extern "C" void hid_host_interface_callback_cwrap(hid_host_device_handle_t hdh, const hid_host_interface_event_t event, void* arg);
+
 class USBTOBLEKBbridge{
 public:
     USBTOBLEKBbridge();
