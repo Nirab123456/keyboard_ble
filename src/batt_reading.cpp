@@ -1,6 +1,6 @@
 // batt_reading.cpp
 #include <helper_keyboard_ble.h>
-
+#include "task_CP.h"
 #define DEFAULT_ADC_PIN         4
 #define DEFAULT_R_TOP           100000.0f
 #define DEFAULT_R_BOTTOM        100000.0f
@@ -62,9 +62,13 @@ bool BatteryMonitorClass::begin()
     {
         pinMode(charge_status_pin,INPUT_PULLUP);
     }
-
+    //Battery Monitor Task
     BaseType_t r = xTaskCreate(
-        _taskFunctionSTATIC,"BATTERY_MONITOR_TASK",4096,this,2,&_task_handle
+        _taskFunctionSTATIC,
+        "BATTERY_MONITOR_TASK",
+        4096,this,
+        BATTERY_MONITOR_TASK_PRIO,
+        &_task_handle
     ); // any free core
     if (r!=pdPASS)
     {
