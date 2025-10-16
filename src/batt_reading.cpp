@@ -52,7 +52,7 @@ bool BatteryMonitorClass::begin()
     calibration_factor = _prefs.getFloat("calibration_factor",calibration_factor);
     charge_status_pin = _prefs.getInt("charge_status_pin",charge_status_pin);
 
-    analogReadResolution(12);
+    analogReadResolution(ATDR);
     #if defined(ARDUINO_ARCH_ESP32)
     analogSetPinAttenuation(pin_adc,ADC_11db);
     #endif
@@ -63,9 +63,9 @@ bool BatteryMonitorClass::begin()
         pinMode(charge_status_pin,INPUT_PULLUP);
     }
 
-    BaseType_t r = xTaskCreatePinnedToCore(
-        _taskFunctionSTATIC,"BATTERY-MONITOR-TASK",4096,this,2,&_task_handle,1
-    );
+    BaseType_t r = xTaskCreate(
+        _taskFunctionSTATIC,"BATTERY_MONITOR_TASK",4096,this,2,&_task_handle
+    ); // any free core
     if (r!=pdPASS)
     {
         Serial.println("BATTERY::BATTERY-MONITOR-TASK::Creation failed");

@@ -18,13 +18,9 @@
 #define BLE_DEVICE_NAME   "ESP_USB2BLE"
 #define KEYQUEUE_DEPTH    256
 #define BLE_TASK_STACK    4096
-#define BLE_TASK_PRIO     6
 #define USB_EVENT_STACK   4096
-#define USB_EVENT_PRIO    2
-#define HID_HOST_DRIVER_TASK_PRIO   8
 #define HID_HOST_DRIVER_STACK       8192
 #define HID_WORKER_STACK            4096
-#define HID_WORKER_PRIO             2
 // #define HID_ALPHABET_START          0x04
 // #define HID_ALPHABET_ENDING         0x1D
 // #define HID_TOP_ROW_NS_START        0x1E

@@ -8,6 +8,8 @@
 #include <algorithm>
 #include <cmath>
 
+const uint8_t ATDR = 12;
+
 class BatteryMonitorClass {
 public:
     // public configuration fields 

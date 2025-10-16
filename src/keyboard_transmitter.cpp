@@ -5,7 +5,7 @@
 #include "keyboard_transmitter.h"
 #include <cstring>   // memcpy, strlen
 #include <cctype>    // toupper
-
+#include "task_CP.h"
 // Constructor
 USBTOBLEKBbridge::USBTOBLEKBbridge()
   : KBQueue(nullptr),
@@ -43,26 +43,26 @@ bool USBTOBLEKBbridge::begin() {
     return false;
   }
 
-  // BLE task pinned to core 1
+  // BLE task pinned to core 0
   xTaskCreatePinnedToCore(
     TASK_Ble_Wrapper,
-    "BLE-Task",
+    "BLE_Task_WRAPPER",
     BLE_TASK_STACK,
     this,
-    BLE_TASK_PRIO,
+    BLE_Task_WRAPPER_PRIO,
     &BleTaskHandle,
-    1
+    BLE_Task_WRAPPER_Core
   );
 
   // USB event task pinned to core 0
   BaseType_t ok = xTaskCreatePinnedToCore(
     TASK_Usb_lib_Wrapper,
-    "USB-EVENTS",
+    "USB_EVENTS_WRAPPER",
     USB_EVENT_STACK,
     xTaskGetCurrentTaskHandle(), // pass the current task handle so usb task can notify us
-    USB_EVENT_PRIO,
+    USB_EVENTS_WRAPPER_PRIO,
     NULL,
-    0
+    USB_EVENTS_WRAPPER_Core
   );
   if (ok != pdTRUE) {
     OledLogger::logf("USB-EVENT: Creation FAILED!");
@@ -76,7 +76,7 @@ bool USBTOBLEKBbridge::begin() {
     .create_background_task = true,
     .task_priority = HID_HOST_DRIVER_TASK_PRIO,
     .stack_size = HID_HOST_DRIVER_STACK,
-    .core_id = 0,
+    .core_id = HID_HOST_DRIVER_TASK_Core,
     .callback = hid_host_device_callback_cwrap,
     .callback_arg = NULL
   };
@@ -92,7 +92,7 @@ bool USBTOBLEKBbridge::begin() {
   // start HID worker task (not pinned)
   xTaskCreate(
     Hid_Worker_Wrapper,
-    "HID-WORKER",
+    "HID_WORKER",
     HID_WORKER_STACK,
     this,
     HID_WORKER_PRIO,
