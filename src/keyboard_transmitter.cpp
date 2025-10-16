@@ -28,18 +28,10 @@ void USBTOBLEKBbridge::set_instance(USBTOBLEKBbridge* p) {
 
 // ----------------- begin() -----------------
 bool USBTOBLEKBbridge::begin() {
-  // NOTE: fix: OledLogger::begin parameters — use correct types and values
-  // (address, width, height, sdaPin, sclPin, queueLen)
-  if (!OledLogger::begin(0x3C, 128, 64, 8, 9, 16)) {
-    Serial.println("OLED : NO OLED CONNECTED ");
-    // still continue so you can debug via Serial if desired — but return false if OLED required
-  } else {
-    OledLogger::logf("OLED READY");
-  }
+
 
   KBQueue = xQueueCreate(KEYQUEUE_DEPTH, sizeof(KB_EVENT));
   if (!KBQueue) {
-    OledLogger::logf("KB-Queue: Creation FAILED!");
     return false;
   }
 
@@ -65,7 +57,6 @@ bool USBTOBLEKBbridge::begin() {
     USB_EVENTS_WRAPPER_Core
   );
   if (ok != pdTRUE) {
-    OledLogger::logf("USB-EVENT: Creation FAILED!");
   }
 
   // wait for usb_lib_task to call xTaskNotifyGive
@@ -85,7 +76,6 @@ bool USBTOBLEKBbridge::begin() {
   // create hid-host event queue
   hid_host_event_queue = xQueueCreate(10, sizeof(HidKB_host_Event_Queue_t));
   if (!hid_host_event_queue) {
-    OledLogger::logf("HID host event queue creation failed");
     return false;
   }
 
@@ -99,7 +89,6 @@ bool USBTOBLEKBbridge::begin() {
     NULL
   );
 
-  OledLogger::logf("SETUP DONE : PLUG <-");
   return true;
 }
 
@@ -188,10 +177,8 @@ void USBTOBLEKBbridge::TASK_Usb_LIBRARY(void* arg) {
     usb_host_lib_handle_events(portMAX_DELAY, &flags);
     if (flags & USB_HOST_LIB_EVENT_FLAGS_NO_CLIENTS) {
       usb_host_device_free_all();
-      OledLogger::logf("USB : NO CLIENT");
     }
     if (flags & USB_HOST_LIB_EVENT_FLAGS_ALL_FREE) {
-      OledLogger::logf("USB : ALL FREE");
     }
   }
 }
@@ -253,7 +240,6 @@ void USBTOBLEKBbridge::hid_Host_Device_EVENT(hid_host_device_handle_t hdh, const
 
   switch (event) {
     case HID_HOST_DRIVER_EVENT_CONNECTED:
-      OledLogger::logf("CONNECTED PTC : %d", dev_params.proto);
       ESP_ERROR_CHECK(hid_host_device_open(hdh, &dev_config));
       if (dev_params.sub_class == HID_SUBCLASS_BOOT_INTERFACE) {
         ESP_ERROR_CHECK(hid_class_request_set_protocol(hdh, HID_REPORT_PROTOCOL_BOOT));
@@ -280,7 +266,6 @@ void USBTOBLEKBbridge::hid_KB_Report_CALLBACK(const uint8_t* const data, const i
     for (size_t i = 0; i < HID_KEYBOARD_KEY_MAX && n < (int)sizeof(buf)-4; ++i) {
       n += snprintf(buf + n, sizeof(buf) - n, " %02x", KB_report_ptr->key[i]);
     }
-    OledLogger::logf("%s", buf);
   }
 
   static uint8_t prev[HID_KEYBOARD_KEY_MAX] = {0};
@@ -324,7 +309,6 @@ void USBTOBLEKBbridge::hid_MOUSE_Report_CALLBACK(const uint8_t *const data, cons
   if (length < 3) return;
   typedef struct __attribute__((packed)) { uint8_t buttons; int8_t x; int8_t y; int8_t wheel; } hid_MOUSE_REPORT_T;
   const hid_MOUSE_REPORT_T *m = (const hid_MOUSE_REPORT_T*)data;
-  OledLogger::logf("MOUSE= B:%02x X:%d Y:%d W:%d", m->buttons, m->x, m->y, m->wheel);
 }
 
 // ----------------- generic report -----------------
@@ -334,7 +318,6 @@ void USBTOBLEKBbridge::hid_Host_Generic_Report_CALLBACK(const uint8_t *const dat
   for (int i = 0; i < min(10, len) && n < (int)sizeof(buf) - 3; ++i) {
     n += snprintf(buf + n, sizeof(buf) - n, " %02X", data[i]);
   }
-  OledLogger::logf("%s", buf);
 }
 void USBTOBLEKBbridge::hid_host_Interface_callback_FORWARD(hid_host_device_handle_t hdh, const hid_host_interface_event_t event, void* arg)
 {
@@ -369,16 +352,13 @@ void USBTOBLEKBbridge::hid_Host_Interface_CALLBACK(hid_host_device_handle_t hdh,
       break;
 
     case HID_HOST_INTERFACE_EVENT_DISCONNECTED:
-      OledLogger::logf("DEVICE DISCONNECTED!");
       ESP_ERROR_CHECK(hid_host_device_close(hdh));
       break;
 
     case HID_HOST_INTERFACE_EVENT_TRANSFER_ERROR:
-      OledLogger::logf("HID: Transfer Error!");
       break;
 
     default:
-      OledLogger::logf("HID: Unhandled Event !");
       break;
   }
 }
@@ -398,12 +378,10 @@ void USBTOBLEKBbridge::setNimBLE_PREF() {
 void USBTOBLEKBbridge::TASK_BLE() {
   setNimBLE_PREF();
   BleKBd.begin();
-  OledLogger::logf("BLE: ADVERTISING");
 
   KB_EVENT event;
   for (;;) {
     if (xQueueReceive(KBQueue, &event, portMAX_DELAY) == pdTRUE) {
-      OledLogger::logf("EVENT: usage=0x%02x mods=0x%02x pressed=%d", event.usage, event.mods, event.pressed);
 
       if (!BleKBd.isConnected()) continue;
 
@@ -463,7 +441,6 @@ void USBTOBLEKBbridge::TASK_BLE() {
             case HID_KEY_UP:         BleKBd.press(KEY_UP_ARROW), BleKBd.release(KEY_UP_ARROW); break;
             case HID_KEY_DOWN:       BleKBd.press(KEY_DOWN_ARROW), BleKBd.release(KEY_DOWN_ARROW); break;
             default:
-              OledLogger::logf("UNKNOWN US: 0x%02x", event.usage);
               break;
           }
         }
