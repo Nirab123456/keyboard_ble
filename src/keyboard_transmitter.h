@@ -25,8 +25,9 @@
 // #define HID_ALPHABET_ENDING         0x1D
 // #define HID_TOP_ROW_NS_START        0x1E
 // #define HID_TOP_ROW_NS_ENDING       0x27
-#define MY_KEY_ENTER                '\r'
 //key DEFINATION
+const char MY_KEY_ENTER             = '\r';
+const char MY_KEY_TAB               = '\t'; 
 const char MY_KEY_SPACE             = ' ';
 const char MY_KEY_MINUS             = '-';
 const char S_MY_KEY_MINUS           = '_';         

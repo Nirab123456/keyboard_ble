@@ -355,8 +355,7 @@ char USBTOBLEKBbridge::usage_TO_ASCII(uint8_t usage, uint8_t mods) {
 
   switch (usage) {
     case HID_KEY_ENTER:        return MY_KEY_ENTER;
-    case HID_KEY_ESC:          return KEY_ESC;
-    case HID_KEY_TAB:          return KEY_TAB;
+    case HID_KEY_TAB:          return MY_KEY_TAB;
     case HID_KEY_SPACE:        return MY_KEY_SPACE;
     case HID_KEY_MINUS:        return (shift ? S_MY_KEY_MINUS : MY_KEY_MINUS);
     case HID_KEY_EQUAL:        return (shift ? S_MY_KEY_EQUAL : MY_KEY_EQUAL);
@@ -381,15 +380,22 @@ void USBTOBLEKBbridge::TASK_BLE() {
   BleKBd.begin();
 
   KB_EVENT event;
-  for (;;) {
+  while (true) {
     if (xQueueReceive(KBQueue, &event, portMAX_DELAY) == pdTRUE) {
 
-      if (!BleKBd.isConnected()) continue;
+      // If not connected, drop to avoid huge buffer buildup and latency.
+      if (!BleKBd.isConnected()) {
+        OledLogger::logf("BLE not connected, dropping event usage=0x%02X", event.usage);
+        continue;
+      }
 
+      // Sync modifiers to incoming event.mods (apply deltas)
       uint8_t new_mods = event.mods;
       if (new_mods != active_mods) {
         uint8_t release_mask = active_mods & ~new_mods;
-        // use plain if (not else-if) so multiple modifier bits are handled
+        uint8_t press_mask   = new_mods & ~active_mods;
+
+        // release modifiers that were removed
         if (release_mask & HID_LEFT_CONTROL)  BleKBd.release(KEY_LEFT_CTRL);
         if (release_mask & HID_RIGHT_CONTROL) BleKBd.release(KEY_RIGHT_CTRL);
         if (release_mask & HID_LEFT_SHIFT)    BleKBd.release(KEY_LEFT_SHIFT);
@@ -399,7 +405,7 @@ void USBTOBLEKBbridge::TASK_BLE() {
         if (release_mask & HID_LEFT_GUI)      BleKBd.release(KEY_LEFT_GUI);
         if (release_mask & HID_RIGHT_GUI)     BleKBd.release(KEY_RIGHT_GUI);
 
-        uint8_t press_mask = new_mods & ~active_mods;
+        // press modifiers that are newly set
         if (press_mask & HID_LEFT_CONTROL)  BleKBd.press(KEY_LEFT_CTRL);
         if (press_mask & HID_RIGHT_CONTROL) BleKBd.press(KEY_RIGHT_CTRL);
         if (press_mask & HID_LEFT_SHIFT)    BleKBd.press(KEY_LEFT_SHIFT);
@@ -412,40 +418,69 @@ void USBTOBLEKBbridge::TASK_BLE() {
         active_mods = new_mods;
       }
 
+      // ignore usage==0 (only mod change)
       if (event.usage == 0) continue;
 
+      // Try to translate to printable ASCII (handles enter/tab/backspace as ASCII)
       char ch = usage_TO_ASCII(event.usage, event.mods);
       if (ch) {
-        if (event.pressed) BleKBd.write(ch);
+        // Printable or ASCII control char (enter/tab/backspace). Send on key press only.
+        if (event.pressed) {
+          BleKBd.write(ch);
+        }
+        // no further action on release for ASCII (write already did press+release)
       } else {
+        // Non-printable keys: handle with press/release or press+release
         if (event.pressed) {
           switch (event.usage) {
-            case HID_KEY_ENTER:      BleKBd.write(MY_KEY_ENTER); break;
-            case HID_KEY_ESC:        BleKBd.write(KEY_ESC); break;
-            case HID_KEY_CAPS_LOCK:  BleKBd.write(KEY_CAPS_LOCK); break;
-            case HID_KEY_DEL:        BleKBd.write(KEY_BACKSPACE); break;
-            case HID_KEY_TAB:        BleKBd.write(KEY_TAB); break;
-            case HID_KEY_F1:         BleKBd.press(KEY_F1), BleKBd.release(KEY_F1); break;
-            case HID_KEY_F2:         BleKBd.press(KEY_F2), BleKBd.release(KEY_F2); break;
-            case HID_KEY_F3:         BleKBd.press(KEY_F3), BleKBd.release(KEY_F3); break;
-            case HID_KEY_F4:         BleKBd.press(KEY_F4), BleKBd.release(KEY_F4); break;
-            case HID_KEY_F5:         BleKBd.press(KEY_F5), BleKBd.release(KEY_F5); break;
-            case HID_KEY_F6:         BleKBd.press(KEY_F6), BleKBd.release(KEY_F6); break;
-            case HID_KEY_F7:         BleKBd.press(KEY_F7), BleKBd.release(KEY_F7); break;
-            case HID_KEY_F8:         BleKBd.press(KEY_F8), BleKBd.release(KEY_F8); break;
-            case HID_KEY_F9:         BleKBd.press(KEY_F9), BleKBd.release(KEY_F9); break;
-            case HID_KEY_F10:        BleKBd.press(KEY_F10), BleKBd.release(KEY_F10); break;
-            case HID_KEY_F11:        BleKBd.press(KEY_F11), BleKBd.release(KEY_F11); break;
-            case HID_KEY_F12:        BleKBd.press(KEY_F12), BleKBd.release(KEY_F12); break;
-            case HID_KEY_LEFT:       BleKBd.press(KEY_LEFT_ARROW), BleKBd.release(KEY_LEFT_ARROW); break;
-            case HID_KEY_RIGHT:      BleKBd.press(KEY_RIGHT_ARROW), BleKBd.release(KEY_RIGHT_ARROW); break;
-            case HID_KEY_UP:         BleKBd.press(KEY_UP_ARROW), BleKBd.release(KEY_UP_ARROW); break;
-            case HID_KEY_DOWN:       BleKBd.press(KEY_DOWN_ARROW), BleKBd.release(KEY_DOWN_ARROW); break;
+            case HID_KEY_ESC:
+              BleKBd.write(KEY_ESC); // ASCII ESC
+              break;
+            case HID_KEY_CAPS_LOCK:
+              // BleKeyboard often doesn't provide a caps-lock toggle; send press+release of KEY_CAPS_LOCK if present
+              BleKBd.press(KEY_CAPS_LOCK); BleKBd.release(KEY_CAPS_LOCK);
+              break;
+            case HID_KEY_F1: case HID_KEY_F2: case HID_KEY_F3: case HID_KEY_F4:
+            case HID_KEY_F5: case HID_KEY_F6: case HID_KEY_F7: case HID_KEY_F8:
+            case HID_KEY_F9: case HID_KEY_F10: case HID_KEY_F11: case HID_KEY_F12:
+              // Use press+release for function keys (map usage->KEY_Fn)
+              {
+                uint8_t fn_code = 0;
+                switch (event.usage) {
+                  case HID_KEY_F1: fn_code = KEY_F1; break;
+                  case HID_KEY_F2: fn_code = KEY_F2; break;
+                  case HID_KEY_F3: fn_code = KEY_F3; break;
+                  case HID_KEY_F4: fn_code = KEY_F4; break;
+                  case HID_KEY_F5: fn_code = KEY_F5; break;
+                  case HID_KEY_F6: fn_code = KEY_F6; break;
+                  case HID_KEY_F7: fn_code = KEY_F7; break;
+                  case HID_KEY_F8: fn_code = KEY_F8; break;
+                  case HID_KEY_F9: fn_code = KEY_F9; break;
+                  case HID_KEY_F10: fn_code = KEY_F10; break;
+                  case HID_KEY_F11: fn_code = KEY_F11; break;
+                  case HID_KEY_F12: fn_code = KEY_F12; break;
+                }
+                if (fn_code) { BleKBd.press(fn_code); BleKBd.release(fn_code); }
+              }
+              break;
+            case HID_KEY_LEFT:
+              BleKBd.press(KEY_LEFT_ARROW); BleKBd.release(KEY_LEFT_ARROW);
+              break;
+            case HID_KEY_RIGHT:
+              BleKBd.press(KEY_RIGHT_ARROW); BleKBd.release(KEY_RIGHT_ARROW);
+              break;
+            case HID_KEY_UP:
+              BleKBd.press(KEY_UP_ARROW); BleKBd.release(KEY_UP_ARROW);
+              break;
+            case HID_KEY_DOWN:
+              BleKBd.press(KEY_DOWN_ARROW); BleKBd.release(KEY_DOWN_ARROW);
+              break;
             default:
               break;
-          }
-        }
-      }
-    } // xQueueReceive
-  } // for
+          } // switch non-printable
+        } // if pressed
+        // For non-printable we generally don't do anything on release because we used press+release above
+      } // non-printable
+    } // queue receive
+  } // loop
 }
