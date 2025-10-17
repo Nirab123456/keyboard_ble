@@ -188,46 +188,6 @@ bool USBTOBLEKBbridge::is_SHIFT(uint8_t mods) {
   return (mods & (HID_LEFT_SHIFT | HID_RIGHT_SHIFT)) != 0;
 }
 
-char USBTOBLEKBbridge::usage_TO_ASCII(uint8_t usage, uint8_t mods) {
-  bool shift = is_SHIFT(mods);
-
-  // Alphabet (HID_KEY_A..Z = 0x04..0x1D)
-  if (usage >= HID_KEY_A && usage <= HID_KEY_Z) {
-    char c = 'a' + (usage - HID_KEY_A);
-    if (shift) c = (char)toupper((unsigned char)c);
-    return c;
-  }
-
-  // Top row numbers (1..0) HID 0x1E..0x27
-  if (usage >= HID_KEY_1 && usage <= HID_KEY_0) {
-    const char normal[]  = "1234567890";
-    const char shifted[] = "!@#$%^&*()";
-    int idx = usage - 0x1E;
-    return shift ? shifted[idx] : normal[idx];
-  }
-
-  switch (usage) {
-    case HID_KEY_ENTER:        return MY_KEY_ENTER;
-    case HID_KEY_ESC:          return KEY_ESC;
-    case HID_KEY_TAB:          return KEY_TAB;
-    case HID_KEY_SPACE:        return MY_KEY_SPACE;
-    case HID_KEY_MINUS:        return (shift ? S_MY_KEY_MINUS : MY_KEY_MINUS);
-    case HID_KEY_EQUAL:        return (shift ? S_MY_KEY_EQUAL : MY_KEY_EQUAL);
-    case HID_KEY_OPEN_BRACKET: return (shift ? S_MY_KEY_OPEN_BRACES : MY_KEY_OPEN_BRACES);
-    case HID_KEY_CLOSE_BRACKET:return (shift ? S_MY_KEY_CLOSE_BRACES : MY_KEY_CLOSE_BRACES);
-    case HID_KEY_BACK_SLASH:   return (shift ? S_MY_KEY_BACK_SLASH : MY_KEY_BACK_SLASH);
-    case HID_KEY_SHARP:        return (shift ? 0 : '#');
-    case HID_KEY_COLON:        return (shift ? S_MY_KEY_COLON : MY_KEY_COLON);
-    case HID_KEY_QUOTE:        return (shift ? S_MY_KEY_QUOTE : MY_KEY_QUOTE);
-    case HID_KEY_TILDE:        return (shift ? S_MY_KEY_TILDE : MY_KEY_TILDE);
-    case HID_KEY_LESS:         return (shift ? S_MY_KEY_LESS : MY_KEY_LESS);
-    case HID_KEY_GREATER:      return (shift ? S_MY_KEY_GREATER : MY_KEY_GREATER);
-    case HID_KEY_SLASH:        return (shift ? S_MY_KEY_SLASH : MY_KEY_SLASH);
-    default:
-      return 0;
-  }
-}
-
 // ----------------- HID device-level event (open/start interface) -----------------
 void USBTOBLEKBbridge::hid_Host_Device_EVENT(hid_host_device_handle_t hdh, const hid_host_driver_event_t event, void* arg) {
   hid_host_dev_params_t dev_params;
@@ -375,6 +335,47 @@ void USBTOBLEKBbridge::setNimBLE_PREF() {
 }
 
 // ----------------- BLE consumer task -----------------
+char USBTOBLEKBbridge::usage_TO_ASCII(uint8_t usage, uint8_t mods) {
+  bool shift = is_SHIFT(mods);
+
+  // Alphabet (HID_KEY_A..Z = 0x04..0x1D)
+  if (usage >= HID_KEY_A && usage <= HID_KEY_Z) {
+    char c = 'a' + (usage - HID_KEY_A);
+    if (shift) c = (char)toupper((unsigned char)c);
+    return c;
+  }
+
+  // Top row numbers (1..0) HID 0x1E..0x27
+  if (usage >= HID_KEY_1 && usage <= HID_KEY_0) {
+    const char normal[]  = "1234567890";
+    const char shifted[] = "!@#$%^&*()";
+    int idx = usage - 0x1E;
+    return shift ? shifted[idx] : normal[idx];
+  }
+
+  switch (usage) {
+    case HID_KEY_ENTER:        return MY_KEY_ENTER;
+    case HID_KEY_ESC:          return KEY_ESC;
+    case HID_KEY_TAB:          return KEY_TAB;
+    case HID_KEY_SPACE:        return MY_KEY_SPACE;
+    case HID_KEY_MINUS:        return (shift ? S_MY_KEY_MINUS : MY_KEY_MINUS);
+    case HID_KEY_EQUAL:        return (shift ? S_MY_KEY_EQUAL : MY_KEY_EQUAL);
+    case HID_KEY_OPEN_BRACKET: return (shift ? S_MY_KEY_OPEN_BRACES : MY_KEY_OPEN_BRACES);
+    case HID_KEY_CLOSE_BRACKET:return (shift ? S_MY_KEY_CLOSE_BRACES : MY_KEY_CLOSE_BRACES);
+    case HID_KEY_BACK_SLASH:   return (shift ? S_MY_KEY_BACK_SLASH : MY_KEY_BACK_SLASH);
+    case HID_KEY_SHARP:        return (shift ? 0 : '#');
+    case HID_KEY_COLON:        return (shift ? S_MY_KEY_COLON : MY_KEY_COLON);
+    case HID_KEY_QUOTE:        return (shift ? S_MY_KEY_QUOTE : MY_KEY_QUOTE);
+    case HID_KEY_TILDE:        return (shift ? S_MY_KEY_TILDE : MY_KEY_TILDE);
+    case HID_KEY_LESS:         return (shift ? S_MY_KEY_LESS : MY_KEY_LESS);
+    case HID_KEY_GREATER:      return (shift ? S_MY_KEY_GREATER : MY_KEY_GREATER);
+    case HID_KEY_SLASH:        return (shift ? S_MY_KEY_SLASH : MY_KEY_SLASH);
+    default:
+      return 0;
+  }
+}
+
+
 void USBTOBLEKBbridge::TASK_BLE() {
   setNimBLE_PREF();
   BleKBd.begin();
