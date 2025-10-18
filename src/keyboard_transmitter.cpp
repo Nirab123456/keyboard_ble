@@ -354,7 +354,7 @@ char USBTOBLEKBbridge::usage_TO_ASCII(uint8_t usage, uint8_t mods) {
   }
 
   switch (usage) {
-    case HID_KEY_ENTER:        return MY_KEY_ENTER;
+    case HID_KEY_ENTER:        return KEY_RETURN;
     case HID_KEY_SPACE:        return MY_KEY_SPACE;
     case HID_KEY_MINUS:        return (shift ? S_MY_KEY_MINUS : MY_KEY_MINUS);
     case HID_KEY_EQUAL:        return (shift ? S_MY_KEY_EQUAL : MY_KEY_EQUAL);
@@ -418,10 +418,10 @@ void USBTOBLEKBbridge::TASK_BLE() {
       } else {
         if (event.pressed) {
           switch (event.usage) {
-            case HID_KEY_ESC:        BleKBd.write(KEY_ESC); break;
-            case HID_KEY_CAPS_LOCK:  BleKBd.write(KEY_CAPS_LOCK); break;
-            case HID_KEY_DEL:        BleKBd.write(KEY_BACKSPACE); break;
-            case HID_KEY_TAB:        BleKBd.write(KEY_TAB); break;
+            case HID_KEY_ESC:        BleKBd.press(KEY_ESC); BleKBd.release(KEY_ESC); break;
+            case HID_KEY_CAPS_LOCK:  BleKBd.write(KEY_CAPS_LOCK); BleKBd.release(KEY_CAPS_LOCK); break;
+            case HID_KEY_DEL:        BleKBd.write(KEY_BACKSPACE); BleKBd.release(KEY_BACKSPACE); break;
+            case HID_KEY_TAB:        BleKBd.press(KEY_TAB); BleKBd.release(KEY_TAB); break;
             case HID_KEY_F1:         BleKBd.press(KEY_F1), BleKBd.release(KEY_F1); break;
             case HID_KEY_F2:         BleKBd.press(KEY_F2), BleKBd.release(KEY_F2); break;
             case HID_KEY_F3:         BleKBd.press(KEY_F3), BleKBd.release(KEY_F3); break;
