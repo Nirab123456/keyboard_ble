@@ -219,7 +219,7 @@ void USBTOBLEKBbridge::hid_KB_Report_CALLBACK(const uint8_t* const data, const i
   if (len < (int)sizeof(hid_keyboard_input_report_boot_t)) return;
   const hid_keyboard_input_report_boot_t* KB_report_ptr = (const hid_keyboard_input_report_boot_t*)data;
 
-  // show raw report on OLED for debugging
+  // show raw report on OLED for debugging (kept as before)
   {
     char buf[128];
     int n = snprintf(buf, sizeof(buf), "RAW : 0x%02x", KB_report_ptr->modifier.val);
@@ -231,6 +231,17 @@ void USBTOBLEKBbridge::hid_KB_Report_CALLBACK(const uint8_t* const data, const i
   static uint8_t prev[HID_KEYBOARD_KEY_MAX] = {0};
   static uint8_t prev_mods = 0;
   uint8_t curr_mods = KB_report_ptr->modifier.val;
+
+  // --- NEW: if modifier byte changed, enqueue a synthetic event (usage==0)
+  // This ensures TASK_BLE will see modifier-only changes (presses/releases).
+  if (curr_mods != prev_mods) {
+    if (instance()) {
+      // usage == 0 marks this as "modifier-only" event; TASK_BLE processes mods before checking usage==0.
+      instance()->enqueueKey(0, curr_mods, true);
+    }
+    // do NOT update prev_mods yet — keep prev_mods for key-release events below,
+    // we'll set prev_mods = curr_mods at the end (same semantic as original).
+  }
 
   // releases: present in prev[] but not in current report
   for (size_t i = 0; i < HID_KEYBOARD_KEY_MAX; ++i) {
@@ -261,7 +272,7 @@ void USBTOBLEKBbridge::hid_KB_Report_CALLBACK(const uint8_t* const data, const i
   }
 
   memcpy(prev, KB_report_ptr->key, HID_KEYBOARD_KEY_MAX);
-  prev_mods = curr_mods;
+  prev_mods = curr_mods;   // update modifier snapshot for next report
 }
 
 // ----------------- hid mouse report -----------------
@@ -421,6 +432,7 @@ void USBTOBLEKBbridge::TASK_BLE() {
             case HID_KEY_ESC:        BleKBd.press(KEY_ESC); BleKBd.release(KEY_ESC); break;
             case HID_KEY_CAPS_LOCK:  BleKBd.write(KEY_CAPS_LOCK); BleKBd.release(KEY_CAPS_LOCK); break;
             case HID_KEY_DEL:        BleKBd.write(KEY_BACKSPACE); BleKBd.release(KEY_BACKSPACE); break;
+            case HID_KEY_DELETE:     BleKBd.press(KEY_DELETE); BleKBd.release(KEY_DELETE);
             case HID_KEY_TAB:        BleKBd.press(KEY_TAB); BleKBd.release(KEY_TAB); break;
             case HID_KEY_F1:         BleKBd.press(KEY_F1), BleKBd.release(KEY_F1); break;
             case HID_KEY_F2:         BleKBd.press(KEY_F2), BleKBd.release(KEY_F2); break;

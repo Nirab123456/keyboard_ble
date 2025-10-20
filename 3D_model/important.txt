@@ -1,0 +1,2 @@
+link for open breadboard : https://www.printables.com/model/1133909-open-breadboard-m3-various-sizes-optical/files
+rp2040 case : https://www.printables.com/model/143745-raspberry-pi-pico-case
